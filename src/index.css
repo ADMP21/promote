@@ -367,7 +367,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .display-has-ticker .display-stage {
-  padding-bottom: clamp(48px, 7vh, 64px);
+  padding-bottom: clamp(80px, 12vh, 110px);
 }
 
 .display-slide-img {
@@ -466,7 +466,7 @@ input[type="range"]::-webkit-slider-thumb {
   overflow: hidden;
   background: linear-gradient(90deg, #c41218 0%, #ed1c24 50%, #c41218 100%);
   border-top: 2px solid rgba(255, 255, 255, 0.2);
-  padding: clamp(10px, 1.5vh, 14px) 0;
+  padding: clamp(16px, 2.5vh, 22px) 0;
   box-shadow: 0 -4px 20px rgba(237, 28, 36, 0.4);
 }
 
@@ -477,7 +477,7 @@ input[type="range"]::-webkit-slider-thumb {
   white-space: nowrap;
   animation: ticker-scroll 30s linear infinite;
   color: white;
-  font-size: clamp(14px, 2.2vw, 22px);
+  font-size: clamp(20px, 3vw, 32px);
   font-weight: 600;
 }
 
