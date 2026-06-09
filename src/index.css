@@ -367,7 +367,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .display-has-ticker .display-stage {
-  padding-bottom: clamp(80px, 12vh, 110px);
+  padding-bottom: clamp(80px, 12vh, 64px);
 }
 
 .display-slide-img {
@@ -395,7 +395,7 @@ input[type="range"]::-webkit-slider-thumb {
   .display-slide-img {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
+    object-fit: cover;
   }
 
   .display-clock {
