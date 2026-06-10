@@ -504,7 +504,6 @@ input[type="range"]::-webkit-slider-thumb {
   padding: clamp(8px, 1.5vw, 14px);
   background: #111;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
 }
 
 .display-room-card {
@@ -513,8 +512,10 @@ input[type="range"]::-webkit-slider-thumb {
   border-radius: 0.75rem;
   padding: clamp(8px, 1.5vw, 14px) clamp(10px, 2vw, 18px);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
+  gap: 8px;
 }
 
 .display-room-label {
@@ -522,18 +523,19 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .display-room-name {
-  font-size: clamp(14px, 2.2vw, 26px);
+  font-size: clamp(12px, 1.8vw, 20px);
   font-weight: 700;
   color: #eee;
-  margin: 0 0 8px;
+  margin: 0;
   line-height: 1.3;
+  flex: 1;
 }
 
 .display-room-status {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .display-room-dot {
@@ -554,7 +556,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .display-room-status-text {
-  font-size: clamp(12px, 1.8vw, 22px);
+  font-size: clamp(11px, 1.5vw, 18px);
   font-weight: 600;
 }
 
