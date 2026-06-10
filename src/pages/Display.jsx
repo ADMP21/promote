@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   show_header_overlay: true,
   show_footer_ticker: true,
   ticker_text: 'ยินดีต้อนรับสู่ระบบ AOT Digital Signage',
+  rooms: [],
 }
 
 export default function Display() {
@@ -48,6 +49,7 @@ export default function Display() {
         show_header_overlay: settingsRes.data.show_header_overlay,
         show_footer_ticker: settingsRes.data.show_footer_ticker,
         ticker_text: settingsRes.data.ticker_text,
+        rooms: settingsRes.data.rooms || [],
       })
     }
   }, [])
@@ -198,7 +200,23 @@ export default function Display() {
           <p className="display-clock-time">{format(clock, 'HH:mm:ss')}</p>
         </div>
       )}
-
+      {/* Room status */}
+      {settings.rooms && settings.rooms.length > 0 && (
+        <div className="display-rooms">
+          {settings.rooms.map((room, index) => (
+            <div key={index} className="display-room-card">
+              <p className="display-room-label">ห้องประชุม</p>
+              <p className="display-room-name">{room.name}</p>
+              <div className="display-room-status">
+                <span className={`display-room-dot ${room.status === 'free' ? 'display-room-dot--free' : 'display-room-dot--busy'}`} />
+                <span className={`display-room-status-text ${room.status === 'free' ? 'display-room-status--free' : 'display-room-status--busy'}`}>
+                  {room.status === 'free' ? 'ว่าง' : 'ใช้อยู่'}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {/* Ticker */}
       {hasTicker && (
         <div className="display-ticker">

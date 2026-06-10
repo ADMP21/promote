@@ -21,6 +21,12 @@ const DEFAULT_SETTINGS = {
   show_header_overlay: true,
   show_footer_ticker: true,
   ticker_text: th.settings.tickerPlaceholder,
+  rooms: [
+    { name: 'ห้องประชุมชั้นล่าง', status: 'free' },
+    { name: 'ห้องประชุมใหญ่', status: 'free' },
+    { name: 'ห้องประชุมเขียว', status: 'free' },
+    { name: 'ห้องปฐมนิเทศ', status: 'free' },
+  ],
 }
 
 export default function Settings() {
@@ -46,6 +52,7 @@ export default function Settings() {
           show_header_overlay: data.show_header_overlay,
           show_footer_ticker: data.show_footer_ticker,
           ticker_text: data.ticker_text,
+          rooms: data.rooms || [],
         })
       }
     } catch (err) {
@@ -194,6 +201,48 @@ export default function Settings() {
             className="input-field resize-none"
             placeholder={th.settings.tickerPlaceholder}
           />
+        </GlassCard>
+
+        <GlassCard title="สถานะห้องประชุม" subtitle="กำหนดสถานะการใช้งานแต่ละห้อง">
+          <div className="grid gap-3 sm:grid-cols-2">
+            {settings.rooms.map((room, index) => (
+              <div key={index} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/60 px-4 py-3">
+                <span className="text-sm font-medium text-slate-700">{room.name}</span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...settings.rooms]
+                      updated[index] = { ...updated[index], status: 'free' }
+                      update('rooms', updated)
+                    }}
+                    className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                      room.status === 'free'
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
+                    }`}
+                  >
+                    ว่าง
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = [...settings.rooms]
+                      updated[index] = { ...updated[index], status: 'busy' }
+                      update('rooms', updated)
+                    }}
+                    className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                      room.status === 'busy'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500'
+                    }`}
+                  >
+                    ใช้อยู่
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </GlassCard>
 
         <button type="submit" disabled={saving} className="btn-primary px-8 py-3">
