@@ -200,6 +200,7 @@ export default function Display() {
           <p className="display-clock-time">{format(clock, 'HH:mm:ss')}</p>
         </div>
       )}
+
       {/* Room status */}
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
@@ -217,6 +218,7 @@ export default function Display() {
           ))}
         </div>
       )}
+
       {/* Ticker */}
       {hasTicker && (
         <div className="display-ticker">

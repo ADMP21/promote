@@ -367,7 +367,7 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .display-has-ticker .display-stage {
-  padding-bottom: clamp(80px, 12vh, 64px);
+  padding-bottom: clamp(8px, 2vh, 24px);
 }
 
 .display-slide-img {
@@ -458,16 +458,12 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .display-ticker {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 20;
   overflow: hidden;
   background: linear-gradient(90deg, #c41218 0%, #ed1c24 50%, #c41218 100%);
   border-top: 2px solid rgba(255, 255, 255, 0.2);
   padding: clamp(16px, 2.5vh, 22px) 0;
   box-shadow: 0 -4px 20px rgba(237, 28, 36, 0.4);
+  flex-shrink: 0;
 }
 
 .display-ticker-track {
@@ -504,6 +500,7 @@ input[type="range"]::-webkit-slider-thumb {
   padding: clamp(8px, 1.5vw, 14px);
   background: #111;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
 }
 
 .display-room-card {
