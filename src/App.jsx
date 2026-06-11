@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Images from './pages/Images'
 import Settings from './pages/Settings'
+import RoomStatus from './pages/RoomStatus'
 import Display from './pages/Display'
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="images" element={<Images />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="rooms" element={<RoomStatus />} />
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

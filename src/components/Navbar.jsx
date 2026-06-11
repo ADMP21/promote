@@ -1,11 +1,12 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Image, Settings, LogOut, Monitor, Tv } from 'lucide-react'
+import { LayoutDashboard, Image, Settings, LogOut, Monitor, Tv, DoorOpen } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { th } from '../i18n/th'
 
 const navItems = [
   { to: '/dashboard', label: th.nav.dashboard, icon: LayoutDashboard },
   { to: '/images', label: th.nav.images, icon: Image },
+  { to: '/rooms', label: 'ห้องประชุม', icon: DoorOpen },
   { to: '/settings', label: th.nav.settings, icon: Settings },
 ]
 
