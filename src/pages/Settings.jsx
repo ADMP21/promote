@@ -22,10 +22,10 @@ const DEFAULT_SETTINGS = {
   show_footer_ticker: true,
   ticker_text: th.settings.tickerPlaceholder,
   rooms: [
-    { name: 'ห้องประชุมชั้นล่าง', status: 'free' },
-    { name: 'ห้องประชุมใหญ่', status: 'free' },
-    { name: 'ห้องประชุมเขียว', status: 'free' },
-    { name: 'ห้องปฐมนิเทศ', status: 'free' },
+    { name: 'ห้องประชุมชั้นล่าง', status: 'free', topic: '', time: '' },
+    { name: 'ห้องประชุมใหญ่', status: 'free', topic: '', time: '' },
+    { name: 'ห้องประชุมเขียว', status: 'free', topic: '', time: '' },
+    { name: 'ห้องปฐมนิเทศ', status: 'free', topic: '', time: '' },
   ],
 }
 
@@ -204,42 +204,66 @@ export default function Settings() {
         </GlassCard>
 
         <GlassCard title="สถานะห้องประชุม" subtitle="กำหนดสถานะการใช้งานแต่ละห้อง">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {settings.rooms.map((room, index) => (
-              <div key={index} className="flex items-center justify-between rounded-xl border border-slate-200/80 bg-white/60 px-4 py-3">
-                <span className="text-sm font-medium text-slate-700">{room.name}</span>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = [...settings.rooms]
-                      updated[index] = { ...updated[index], status: 'free' }
-                      update('rooms', updated)
-                    }}
-                    className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                      room.status === 'free'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
-                    }`}
-                  >
-                    ว่าง
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const updated = [...settings.rooms]
-                      updated[index] = { ...updated[index], status: 'busy' }
-                      update('rooms', updated)
-                    }}
-                    className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
-                      room.status === 'busy'
-                        ? 'bg-red-500 text-white'
-                        : 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500'
-                    }`}
-                  >
-                    ใช้อยู่
-                  </button>
+              <div key={index} className="rounded-xl border border-slate-200/80 bg-white/60 px-4 py-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-700">{room.name}</span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...settings.rooms]
+                        updated[index] = { ...updated[index], status: 'free' }
+                        update('rooms', updated)
+                      }}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                        room.status === 'free'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-100 text-slate-500 hover:bg-emerald-50 hover:text-emerald-600'
+                      }`}
+                    >
+                      ว่าง
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = [...settings.rooms]
+                        updated[index] = { ...updated[index], status: 'busy' }
+                        update('rooms', updated)
+                      }}
+                      className={`rounded-lg px-3 py-1 text-xs font-semibold transition-all ${
+                        room.status === 'busy'
+                          ? 'bg-red-500 text-white'
+                          : 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500'
+                      }`}
+                    >
+                      ใช้อยู่
+                    </button>
+                  </div>
                 </div>
+                <input
+                  type="text"
+                  value={room.topic || ''}
+                  onChange={(e) => {
+                    const updated = [...settings.rooms]
+                    updated[index] = { ...updated[index], topic: e.target.value }
+                    update('rooms', updated)
+                  }}
+                  placeholder="หัวข้อการประชุม"
+                  className="input-field py-1.5 text-xs"
+                />
+                <input
+                  type="text"
+                  value={room.time || ''}
+                  onChange={(e) => {
+                    const updated = [...settings.rooms]
+                    updated[index] = { ...updated[index], time: e.target.value }
+                    update('rooms', updated)
+                  }}
+                  placeholder="เวลา เช่น 09:00 – 11:00"
+                  className="input-field py-1.5 text-xs"
+                />
               </div>
             ))}
           </div>

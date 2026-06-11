@@ -507,9 +507,15 @@ input[type="range"]::-webkit-slider-thumb {
   background: #1a1a1a;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.75rem;
-  padding: clamp(8px, 1.5vw, 14px) clamp(10px, 2vw, 18px);
+  padding: clamp(7px, 1.2vw, 12px) clamp(10px, 2vw, 18px);
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.display-room-top {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
@@ -526,6 +532,33 @@ input[type="range"]::-webkit-slider-thumb {
   margin: 0;
   line-height: 1.3;
   flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.display-room-detail-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.display-room-topic {
+  font-size: clamp(10px, 1.3vw, 15px);
+  color: #aaa;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.display-room-marquee {
+  display: inline-block;
+  animation: ticker-scroll 12s linear infinite;
+}
+
+.display-room-time {
+  font-size: clamp(9px, 1.1vw, 13px);
+  color: #666;
+  margin: 0;
 }
 
 .display-room-status {
