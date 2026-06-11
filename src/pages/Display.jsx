@@ -206,25 +206,14 @@ export default function Display() {
         <div className="display-rooms">
           {settings.rooms.map((room, index) => (
             <div key={index} className="display-room-card">
-              <div className="display-room-top">
-                <p className="display-room-name">{room.name}</p>
-                <div className="display-room-status">
-                  <span className={`display-room-dot ${room.status === 'free' ? 'display-room-dot--free' : 'display-room-dot--busy'}`} />
-                  <span className={`display-room-status-text ${room.status === 'free' ? 'display-room-status--free' : 'display-room-status--busy'}`}>
-                    {room.status === 'free' ? 'ว่าง' : 'ใช้อยู่'}
-                  </span>
-                </div>
+              <p className="display-room-label">ห้องประชุม</p>
+              <p className="display-room-name">{room.name}</p>
+              <div className="display-room-status">
+                <span className={`display-room-dot ${room.status === 'free' ? 'display-room-dot--free' : 'display-room-dot--busy'}`} />
+                <span className={`display-room-status-text ${room.status === 'free' ? 'display-room-status--free' : 'display-room-status--busy'}`}>
+                  {room.status === 'free' ? 'ว่าง' : 'ใช้อยู่'}
+                </span>
               </div>
-              {room.topic && (
-                <div className="display-room-detail-wrap">
-                  <p className="display-room-topic">
-                    <span className={room.topic.length > 20 ? 'display-room-marquee' : ''}>{room.topic}</span>
-                  </p>
-                </div>
-              )}
-              {room.time && (
-                <p className="display-room-time">{room.time}</p>
-              )}
             </div>
           ))}
         </div>
