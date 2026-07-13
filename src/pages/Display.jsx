@@ -16,8 +16,15 @@ const DEFAULT_SETTINGS = {
   rooms: [],
 }
 
-// ── Normalize ชื่อห้อง: ตัดช่องว่าง + normalize unicode ──────────────────────
 const normalizeName = (s) => (s || '').trim().normalize('NFC').replace(/\s+/g, '')
+
+// ── แปลง hex → rgba ───────────────────────────────────────────────────────────
+function hexToRgba(hex, alpha = 1) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
 
 export default function Display() {
   const [images, setImages] = useState([])
@@ -32,7 +39,6 @@ export default function Display() {
   const intervalRef = useRef(null)
   const animationRef = useRef(null)
 
-  // ── ดึง Rooms จากระบบจอง ──────────────────────────────────────────────────
   const fetchRoomsFromBookingSystem = useCallback(async () => {
     const { data } = await supabaseBooking
       .from('rooms')
@@ -41,7 +47,6 @@ export default function Display() {
     if (data) setRooms(data)
   }, [])
 
-  // ── ดึง Bookings จากระบบจอง (ทุก booking วันนี้) ─────────────────────────
   const fetchBookingsFromBookingSystem = useCallback(async () => {
     const now = new Date()
     const bangkokDate = new Intl.DateTimeFormat('en-CA', {
@@ -51,21 +56,19 @@ export default function Display() {
       day: '2-digit',
     }).format(now)
 
-    // ช่วงวันนี้ทั้งวัน Bangkok time → UTC
     const todayStartUTC = new Date(`${bangkokDate}T00:00:00+07:00`).toISOString()
     const todayEndUTC = new Date(`${bangkokDate}T23:59:59+07:00`).toISOString()
 
     const { data } = await supabaseBooking
       .from('bookings')
       .select('id, title, organizer, start_time, end_time, room_id')
-      .gte('end_time', todayStartUTC)   // ← ยังไม่จบ (end_time >= วันนี้เริ่ม)
-      .lte('start_time', todayEndUTC)   // ← เริ่มแล้ว (start_time <= วันนี้สิ้นสุด)
+      .gte('end_time', todayStartUTC)
+      .lte('start_time', todayEndUTC)
       .order('start_time', { ascending: true })
 
     if (data) setBookings(data)
   }, [])
 
-  // ── ดึงข้อมูล Display (images + settings) ─────────────────────────────────
   const fetchData = useCallback(async () => {
     const [imagesRes, settingsRes] = await Promise.all([
       supabase
@@ -100,41 +103,25 @@ export default function Display() {
     ])
   }, [fetchBookingsFromBookingSystem, fetchRoomsFromBookingSystem])
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  useEffect(() => { fetchData() }, [fetchData])
 
-  // ── Realtime Subscriptions ─────────────────────────────────────────────────
   useEffect(() => {
     const imagesChannel = supabase
       .channel('display-images')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, () => {
-        fetchData()
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, () => fetchData())
       .subscribe()
 
     const settingsChannel = supabase
       .channel('display-settings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'display_settings' }, () => {
-        fetchData()
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'display_settings' }, () => fetchData())
       .subscribe()
 
     const bookingsChannel = supabaseBooking
       .channel('booking-system-bookings')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'bookings',
-      }, () => {
-        fetchBookingsFromBookingSystem()
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => fetchBookingsFromBookingSystem())
       .subscribe()
 
-    // Auto refresh ทุก 1 นาที (backup)
-    const refreshInterval = setInterval(() => {
-      fetchBookingsFromBookingSystem()
-    }, 60_000)
+    const refreshInterval = setInterval(() => fetchBookingsFromBookingSystem(), 60_000)
 
     return () => {
       supabase.removeChannel(imagesChannel)
@@ -144,7 +131,7 @@ export default function Display() {
     }
   }, [fetchData, fetchBookingsFromBookingSystem])
 
-  // ── คำนวณ roomStatusMap ────────────────────────────────────────────────────
+  // ── คำนวณ roomStatusMap (เพิ่ม roomColor) ─────────────────────────────────
   useEffect(() => {
     if (!settings.rooms?.length || !rooms.length) return
 
@@ -155,28 +142,24 @@ export default function Display() {
 
       const map = {}
       settings.rooms.forEach((settingRoom) => {
-        // match ชื่อห้องแบบยืดหยุ่น
         const room = rooms.find(
           (r) => normalizeName(r.name) === normalizeName(settingRoom.name)
         )
         if (!room) {
-          map[settingRoom.name] = { isBusy: false, booking: null }
+          map[settingRoom.name] = { isBusy: false, booking: null, roomColor: '#888888' }
           return
         }
 
         const activeBooking = bookings.find((b) => {
           if (b.room_id !== room.id) return false
-          const startBKK = new Date(
-            new Date(b.start_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
-          )
-          const endBKK = new Date(
-            new Date(b.end_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
-          )
+          const startBKK = new Date(new Date(b.start_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
+          const endBKK = new Date(new Date(b.end_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
           return nowBangkok >= startBKK && nowBangkok <= endBKK
         })
 
         map[settingRoom.name] = {
           isBusy: !!activeBooking,
+          roomColor: room.color || '#888888', // ← สีห้องจากระบบจอง
           booking: activeBooking
             ? {
                 topic: activeBooking.title,
@@ -206,30 +189,23 @@ export default function Display() {
     return () => clearInterval(interval)
   }, [settings.rooms, rooms, bookings])
 
-  // ── Clock ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
 
-  // ── Fullscreen ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (settings.fullscreen_mode) {
       const el = document.documentElement
-      if (el.requestFullscreen) {
-        el.requestFullscreen().catch(() => {})
-      }
+      if (el.requestFullscreen) el.requestFullscreen().catch(() => {})
     }
   }, [settings.fullscreen_mode])
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    return () => {
-      document.body.style.overflow = ''
-    }
+    return () => { document.body.style.overflow = '' }
   }, [])
 
-  // ── Slideshow ──────────────────────────────────────────────────────────────
   const goToNext = useCallback(() => {
     if (images.length <= 1 || animating) return
     setAnimating(true)
@@ -277,12 +253,7 @@ export default function Display() {
 
     return (
       <div key={`${image.id}-${type}`} className={className}>
-        <img
-          src={image.image_url}
-          alt={image.title}
-          className="display-slide-img"
-          draggable={false}
-        />
+        <img src={image.image_url} alt={image.title} className="display-slide-img" draggable={false} />
       </div>
     )
   }
@@ -324,9 +295,7 @@ export default function Display() {
       {/* Clock */}
       {settings.show_header_overlay && (
         <div className="display-clock">
-          <p className="display-clock-date">
-            {format(clock, 'EEEE d MMMM yyyy', { locale: thLocale })}
-          </p>
+          <p className="display-clock-date">{format(clock, 'EEEE d MMMM yyyy', { locale: thLocale })}</p>
           <p className="display-clock-time">{format(clock, 'HH:mm:ss')}</p>
         </div>
       )}
@@ -335,34 +304,86 @@ export default function Display() {
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
           {settings.rooms.map((room, index) => {
-            const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
-            const { isBusy, booking } = status
+            const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null, roomColor: '#888888' }
+            const { isBusy, booking, roomColor } = status
+
             return (
-              <div key={index} className="display-room-card">
+              <div
+                key={index}
+                className="display-room-card"
+                style={{
+                  borderTop: `3px solid ${roomColor}`,
+                  background: isBusy
+                    ? `linear-gradient(135deg, #1a1a1a 0%, ${hexToRgba(roomColor, 0.15)} 100%)`
+                    : '#1a1a1a',
+                }}
+              >
+                {/* ชื่อห้อง + สถานะ */}
                 <div className="display-room-top">
-                  <p className="display-room-name">{room.name}</p>
+                  <p
+                    className="display-room-name"
+                    style={{ color: '#ffffff', fontWeight: 700 }}
+                  >
+                    {room.name}
+                  </p>
                   <div className="display-room-status">
                     <span className={`display-room-dot ${isBusy ? 'display-room-dot--busy' : 'display-room-dot--free'}`} />
-                    <span className={`display-room-status-text ${isBusy ? 'display-room-status--busy' : 'display-room-status--free'}`}>
+                    <span
+                      className="display-room-status-text"
+                      style={{
+                        color: isBusy ? '#ff4d4d' : '#4dff91',
+                        fontWeight: 700,
+                      }}
+                    >
                       {isBusy ? 'ใช้อยู่' : 'ว่าง'}
                     </span>
                   </div>
                 </div>
+
+                {/* เส้นแบ่ง */}
+                {isBusy && (
+                  <div style={{
+                    height: '1px',
+                    background: hexToRgba(roomColor, 0.4),
+                    margin: '4px 0',
+                  }} />
+                )}
+
+                {/* หัวข้อประชุม — สีห้อง สว่าง */}
                 {booking?.topic && (
                   <div className="display-room-detail-wrap">
-                    <p className="display-room-topic">
+                    <p
+                      className="display-room-topic"
+                      style={{ color: roomColor, fontWeight: 700, fontSize: '0.85em' }}
+                    >
                       <span className={booking.topic.length > 20 ? 'display-room-marquee' : ''}>
                         {booking.topic}
                       </span>
                     </p>
                   </div>
                 )}
+
+                {/* ผู้จัด — สีขาวนวล */}
                 {booking?.booked_by && (
-                  <p className="display-room-time">👤 {booking.booked_by}</p>
+                  <p
+                    className="display-room-time"
+                    style={{ color: '#c8d6e5', fontSize: '0.78em' }}
+                  >
+                    👤 {booking.booked_by}
+                  </p>
                 )}
+
+                {/* เวลา — สีเทาอ่อน */}
                 {(booking?.time_start || booking?.time_end) && (
-                  <p className="display-room-time">
-                    {booking.time_start || ''}
+                  <p
+                    className="display-room-time"
+                    style={{
+                      color: hexToRgba(roomColor, 0.85),
+                      fontSize: '0.78em',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}
+                  >
+                    ⏰ {booking.time_start || ''}
                     {booking.time_start && booking.time_end ? ' – ' : ''}
                     {booking.time_end || ''}
                   </p>
