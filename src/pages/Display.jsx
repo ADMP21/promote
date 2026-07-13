@@ -252,36 +252,56 @@ export default function Display() {
   const previousImage = prevIndex !== null ? images[prevIndex] : null
   const hasTicker = settings.show_footer_ticker && settings.ticker_text
 
-  // ── Pastel Color Palette ───────────────────────────────────────────────────
-  const BUSY = {
-    bg:         '#2a1a1a',           // พื้นหลังแดงเข้มมืด
-    border:     '#fca5a5',           // แดง Pastel
-    dot:        '#fca5a5',
-    glow:       '0 0 8px #fca5a5',
-    label:      '#fca5a5',           // "ใช้อยู่" — แดง Pastel
-    divider:    'rgba(252,165,165,0.2)',
-    topic:      '#fef08a',           // หัวข้อ — เหลืองนวล
-    organizer:  '#bae6fd',           // ผู้จัด — ฟ้าอ่อน
-    time:       '#d8b4fe',           // เวลา — ม่วงอ่อน
-  }
-  const FREE = {
-    bg:         '#1a1e2a',           // พื้นหลังน้ำเงินเข้มมืด
-    border:     '#86efac',           // เขียว Pastel
-    dot:        '#86efac',
-    glow:       'none',
-    label:      '#86efac',           // "ว่าง" — เขียว Pastel
-    divider:    'none',
-    topic:      'transparent',
-    organizer:  'transparent',
-    time:       'transparent',
-  }
-
   return (
     <div
       className={`display-mode display-theme-red ${hasTicker ? 'display-has-ticker' : ''} ${
         settings.show_header_overlay ? 'display-has-header' : 'display-has-logo-only'
       }`}
     >
+      {/* Neon CSS Animations */}
+      <style>{`
+        @keyframes neon-flicker-red {
+          0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+            box-shadow:
+              0 0 4px #ff3c3c,
+              0 0 12px #ff3c3c,
+              0 0 24px #ff3c3c,
+              0 0 48px #ff0000;
+          }
+          20%, 24%, 55% {
+            box-shadow: none;
+          }
+        }
+        @keyframes neon-flicker-green {
+          0%, 100% {
+            box-shadow:
+              0 0 4px #39ff14,
+              0 0 12px #39ff14,
+              0 0 24px #39ff14,
+              0 0 48px #00cc00;
+          }
+          50% {
+            box-shadow:
+              0 0 2px #39ff14,
+              0 0 6px #39ff14,
+              0 0 12px #39ff14;
+          }
+        }
+        @keyframes text-glow-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.85; }
+        }
+        .neon-card-busy {
+          animation: neon-flicker-red 6s infinite;
+        }
+        .neon-card-free {
+          animation: neon-flicker-green 4s infinite;
+        }
+        .neon-text-pulse {
+          animation: text-glow-pulse 3s ease-in-out infinite;
+        }
+      `}</style>
+
       {/* Logo */}
       <div className="display-logo">
         <img src="/cm-logo.png" alt="CM Logo" className="display-logo-img" draggable={false} />
@@ -314,112 +334,138 @@ export default function Display() {
         </div>
       )}
 
-      {/* ── Room Status ── */}
+      {/* ── Room Status — Neon Glow ── */}
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
           {settings.rooms.map((room, index) => {
             const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
-            const P = isBusy ? BUSY : FREE
 
             return (
               <div
                 key={index}
-                className="display-room-card"
+                className={`display-room-card ${isBusy ? 'neon-card-busy' : 'neon-card-free'}`}
                 style={{
-                  background: P.bg,
-                  borderTop: `3px solid ${P.border}`,
-                  borderRadius: '8px',
+                  background: '#000000',
+                  border: `1.5px solid ${isBusy ? '#ff3c3c' : '#39ff14'}`,
+                  borderRadius: '10px',
                   padding: '10px 12px',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                {/* ── ชื่อห้อง + สถานะ ── */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  {/* ชื่อห้อง — ขาวนวล Bold */}
-                  <p style={{
-                    color: '#f0f4ff',
-                    fontWeight: 700,
-                    fontSize: '0.88em',
-                    margin: 0,
-                    letterSpacing: '0.01em',
-                  }}>
-                    {room.name}
-                  </p>
+                {/* ── Neon glow overlay พื้นหลัง ── */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '10px',
+                  background: isBusy
+                    ? 'radial-gradient(ellipse at top, rgba(255,60,60,0.08) 0%, transparent 70%)'
+                    : 'radial-gradient(ellipse at top, rgba(57,255,20,0.06) 0%, transparent 70%)',
+                  pointerEvents: 'none',
+                }} />
 
-                  {/* Badge สถานะ */}
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '5px',
-                    background: 'rgba(255,255,255,0.06)',
-                    borderRadius: '20px',
-                    padding: '2px 8px',
+                {/* ── ชื่อห้อง ── */}
+                <p
+                  className="neon-text-pulse"
+                  style={{
+                    color: '#ffffff',
+                    fontWeight: 800,
+                    fontSize: '0.9em',
+                    margin: '0 0 6px 0',
+                    letterSpacing: '0.04em',
+                    textShadow: '0 0 8px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.4)',
+                  }}
+                >
+                  {room.name}
+                </p>
+
+                {/* ── Badge สถานะ ── */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  border: `1px solid ${isBusy ? '#ff3c3c' : '#39ff14'}`,
+                  borderRadius: '4px',
+                  padding: '2px 8px',
+                  marginBottom: isBusy ? '8px' : '0',
+                  background: isBusy
+                    ? 'rgba(255,60,60,0.12)'
+                    : 'rgba(57,255,20,0.10)',
+                }}>
+                  {/* จุด Neon กระพริบ */}
+                  <span style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: isBusy ? '#ff3c3c' : '#39ff14',
+                    boxShadow: isBusy
+                      ? '0 0 6px #ff3c3c, 0 0 12px #ff0000'
+                      : '0 0 6px #39ff14, 0 0 12px #00cc00',
+                    display: 'inline-block',
+                    flexShrink: 0,
+                  }} />
+                  <span style={{
+                    color: isBusy ? '#ff6b6b' : '#39ff14',
+                    fontWeight: 700,
+                    fontSize: '0.75em',
+                    letterSpacing: '0.08em',
+                    textShadow: isBusy
+                      ? '0 0 8px #ff3c3c, 0 0 16px #ff0000'
+                      : '0 0 8px #39ff14, 0 0 16px #00cc00',
                   }}>
-                    <span style={{
-                      width: '7px',
-                      height: '7px',
-                      borderRadius: '50%',
-                      background: P.dot,
-                      boxShadow: P.glow,
-                      display: 'inline-block',
-                      flexShrink: 0,
-                    }} />
-                    <span style={{
-                      color: P.label,
-                      fontWeight: 700,
-                      fontSize: '0.75em',
-                      letterSpacing: '0.03em',
-                    }}>
-                      {isBusy ? 'ใช้อยู่' : 'ว่าง'}
-                    </span>
-                  </div>
+                    {isBusy ? '● ใช้อยู่' : '● ว่าง'}
+                  </span>
                 </div>
 
-                {/* ── เส้นคั่น (เฉพาะห้องที่ใช้อยู่) ── */}
+                {/* ── เส้นคั่น Neon ── */}
                 {isBusy && (
                   <div style={{
                     height: '1px',
-                    background: P.divider,
-                    margin: '7px 0 5px',
+                    background: 'linear-gradient(90deg, transparent, rgba(255,60,60,0.5), transparent)',
+                    margin: '0 0 6px 0',
                   }} />
                 )}
 
-                {/* ── หัวข้อประชุม — เหลืองนวล ── */}
+                {/* ── หัวข้อประชุม — เหลือง Neon ── */}
                 {booking?.topic && (
                   <p style={{
-                    color: P.topic,
+                    color: '#ffe94d',
                     fontWeight: 600,
-                    fontSize: '0.82em',
-                    margin: '3px 0 0',
+                    fontSize: '0.8em',
+                    margin: '0 0 4px 0',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    lineHeight: 1.4,
+                    textShadow: '0 0 8px #ffe94d, 0 0 20px #ffcc00',
+                    letterSpacing: '0.02em',
                   }}>
                     📋 {booking.topic}
                   </p>
                 )}
 
-                {/* ── ผู้จัด — ฟ้าอ่อน ── */}
+                {/* ── ผู้จัด — ฟ้า Neon ── */}
                 {booking?.booked_by && (
                   <p style={{
-                    color: P.organizer,
+                    color: '#4dd9ff',
                     fontSize: '0.76em',
-                    margin: '3px 0 0',
-                    lineHeight: 1.4,
+                    margin: '0 0 4px 0',
+                    textShadow: '0 0 8px #4dd9ff, 0 0 16px #00aaff',
+                    letterSpacing: '0.02em',
                   }}>
                     👤 {booking.booked_by}
                   </p>
                 )}
 
-                {/* ── เวลา — ม่วงอ่อน ── */}
+                {/* ── เวลา — ม่วง Neon ── */}
                 {(booking?.time_start || booking?.time_end) && (
                   <p style={{
-                    color: P.time,
+                    color: '#cc88ff',
                     fontSize: '0.76em',
-                    margin: '3px 0 0',
+                    margin: '0',
+                    textShadow: '0 0 8px #cc88ff, 0 0 16px #9900ff',
                     fontVariantNumeric: 'tabular-nums',
-                    lineHeight: 1.4,
+                    letterSpacing: '0.02em',
                   }}>
                     ⏰ {booking.time_start || ''}
                     {booking.time_start && booking.time_end ? ' – ' : ''}
