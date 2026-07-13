@@ -41,7 +41,7 @@ export default function Display() {
     if (data) setRooms(data)
   }, [])
 
-  // ── ดึง Bookings จากระบบจอง ───────────────────────────────────────────────
+  // ── ดึง Bookings จากระบบจอง (ทุก booking วันนี้) ─────────────────────────
   const fetchBookingsFromBookingSystem = useCallback(async () => {
     const now = new Date()
     const bangkokDate = new Intl.DateTimeFormat('en-CA', {
@@ -51,14 +51,15 @@ export default function Display() {
       day: '2-digit',
     }).format(now)
 
+    // ช่วงวันนี้ทั้งวัน Bangkok time → UTC
     const todayStartUTC = new Date(`${bangkokDate}T00:00:00+07:00`).toISOString()
     const todayEndUTC = new Date(`${bangkokDate}T23:59:59+07:00`).toISOString()
 
     const { data } = await supabaseBooking
       .from('bookings')
       .select('id, title, organizer, start_time, end_time, room_id')
-      .gte('start_time', todayStartUTC)
-      .lte('start_time', todayEndUTC)
+      .gte('end_time', todayStartUTC)   // ← ยังไม่จบ (end_time >= วันนี้เริ่ม)
+      .lte('start_time', todayEndUTC)   // ← เริ่มแล้ว (start_time <= วันนี้สิ้นสุด)
       .order('start_time', { ascending: true })
 
     if (data) setBookings(data)
@@ -143,7 +144,7 @@ export default function Display() {
     }
   }, [fetchData, fetchBookingsFromBookingSystem])
 
-  // ── คำนวณ roomStatusMap ทุกครั้งที่ rooms หรือ bookings เปลี่ยน ────────────
+  // ── คำนวณ roomStatusMap ────────────────────────────────────────────────────
   useEffect(() => {
     if (!settings.rooms?.length || !rooms.length) return
 
@@ -154,7 +155,7 @@ export default function Display() {
 
       const map = {}
       settings.rooms.forEach((settingRoom) => {
-        // ── match ชื่อห้องแบบยืดหยุ่น (normalize) ──
+        // match ชื่อห้องแบบยืดหยุ่น
         const room = rooms.find(
           (r) => normalizeName(r.name) === normalizeName(settingRoom.name)
         )
