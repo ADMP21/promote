@@ -258,50 +258,6 @@ export default function Display() {
         settings.show_header_overlay ? 'display-has-header' : 'display-has-logo-only'
       }`}
     >
-      {/* Neon CSS Animations */}
-      <style>{`
-        @keyframes neon-flicker-red {
-          0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-            box-shadow:
-              0 0 4px #ff3c3c,
-              0 0 12px #ff3c3c,
-              0 0 24px #ff3c3c,
-              0 0 48px #ff0000;
-          }
-          20%, 24%, 55% {
-            box-shadow: none;
-          }
-        }
-        @keyframes neon-flicker-green {
-          0%, 100% {
-            box-shadow:
-              0 0 4px #39ff14,
-              0 0 12px #39ff14,
-              0 0 24px #39ff14,
-              0 0 48px #00cc00;
-          }
-          50% {
-            box-shadow:
-              0 0 2px #39ff14,
-              0 0 6px #39ff14,
-              0 0 12px #39ff14;
-          }
-        }
-        @keyframes text-glow-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.85; }
-        }
-        .neon-card-busy {
-          animation: neon-flicker-red 6s infinite;
-        }
-        .neon-card-free {
-          animation: neon-flicker-green 4s infinite;
-        }
-        .neon-text-pulse {
-          animation: text-glow-pulse 3s ease-in-out infinite;
-        }
-      `}</style>
-
       {/* Logo */}
       <div className="display-logo">
         <img src="/cm-logo.png" alt="CM Logo" className="display-logo-img" draggable={false} />
@@ -334,49 +290,54 @@ export default function Display() {
         </div>
       )}
 
-      {/* ── Room Status — Neon Glow ── */}
+      {/* ── Room Status — Neon Glow (ไม่กระพริบ) ── */}
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
           {settings.rooms.map((room, index) => {
             const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
 
+            // ── Neon color ตามสถานะ ──
+            const neonColor = isBusy ? '#ff4444' : '#39ff14'
+            const neonGlow  = isBusy
+              ? '0 0 6px #ff4444, 0 0 14px #ff2222, 0 0 28px #ff000066'
+              : '0 0 6px #39ff14, 0 0 14px #39ff14, 0 0 28px #00cc0066'
+
             return (
               <div
                 key={index}
-                className={`display-room-card ${isBusy ? 'neon-card-busy' : 'neon-card-free'}`}
+                className="display-room-card"
                 style={{
-                  background: '#000000',
-                  border: `1.5px solid ${isBusy ? '#ff3c3c' : '#39ff14'}`,
+                  background: '#0a0a0a',
+                  border: `1.5px solid ${neonColor}`,
                   borderRadius: '10px',
                   padding: '10px 12px',
+                  boxShadow: neonGlow,
                   position: 'relative',
                   overflow: 'hidden',
                 }}
               >
-                {/* ── Neon glow overlay พื้นหลัง ── */}
+                {/* พื้นหลัง glow overlay */}
                 <div style={{
                   position: 'absolute',
                   inset: 0,
                   borderRadius: '10px',
                   background: isBusy
-                    ? 'radial-gradient(ellipse at top, rgba(255,60,60,0.08) 0%, transparent 70%)'
-                    : 'radial-gradient(ellipse at top, rgba(57,255,20,0.06) 0%, transparent 70%)',
+                    ? 'radial-gradient(ellipse at 50% 0%, rgba(255,68,68,0.10) 0%, transparent 65%)'
+                    : 'radial-gradient(ellipse at 50% 0%, rgba(57,255,20,0.07) 0%, transparent 65%)',
                   pointerEvents: 'none',
                 }} />
 
                 {/* ── ชื่อห้อง ── */}
-                <p
-                  className="neon-text-pulse"
-                  style={{
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    fontSize: '0.9em',
-                    margin: '0 0 6px 0',
-                    letterSpacing: '0.04em',
-                    textShadow: '0 0 8px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.4)',
-                  }}
-                >
+                <p style={{
+                  color: '#ffffff',
+                  fontWeight: 800,
+                  fontSize: '0.9em',
+                  margin: '0 0 6px 0',
+                  letterSpacing: '0.04em',
+                  textShadow: '0 0 6px rgba(255,255,255,0.7), 0 0 14px rgba(255,255,255,0.3)',
+                  position: 'relative',
+                }}>
                   {room.name}
                 </p>
 
@@ -385,45 +346,42 @@ export default function Display() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  border: `1px solid ${isBusy ? '#ff3c3c' : '#39ff14'}`,
+                  border: `1px solid ${neonColor}`,
                   borderRadius: '4px',
                   padding: '2px 8px',
-                  marginBottom: isBusy ? '8px' : '0',
+                  marginBottom: isBusy && booking ? '7px' : '0',
                   background: isBusy
-                    ? 'rgba(255,60,60,0.12)'
-                    : 'rgba(57,255,20,0.10)',
+                    ? 'rgba(255,68,68,0.10)'
+                    : 'rgba(57,255,20,0.08)',
+                  position: 'relative',
                 }}>
-                  {/* จุด Neon กระพริบ */}
                   <span style={{
                     width: '7px',
                     height: '7px',
                     borderRadius: '50%',
-                    background: isBusy ? '#ff3c3c' : '#39ff14',
-                    boxShadow: isBusy
-                      ? '0 0 6px #ff3c3c, 0 0 12px #ff0000'
-                      : '0 0 6px #39ff14, 0 0 12px #00cc00',
+                    background: neonColor,
+                    boxShadow: neonGlow,
                     display: 'inline-block',
                     flexShrink: 0,
                   }} />
                   <span style={{
-                    color: isBusy ? '#ff6b6b' : '#39ff14',
+                    color: neonColor,
                     fontWeight: 700,
                     fontSize: '0.75em',
-                    letterSpacing: '0.08em',
-                    textShadow: isBusy
-                      ? '0 0 8px #ff3c3c, 0 0 16px #ff0000'
-                      : '0 0 8px #39ff14, 0 0 16px #00cc00',
+                    letterSpacing: '0.06em',
+                    textShadow: neonGlow,
                   }}>
-                    {isBusy ? '● ใช้อยู่' : '● ว่าง'}
+                    {isBusy ? 'ใช้อยู่' : 'ว่าง'}
                   </span>
                 </div>
 
-                {/* ── เส้นคั่น Neon ── */}
-                {isBusy && (
+                {/* ── เส้นคั่น ── */}
+                {isBusy && booking && (
                   <div style={{
                     height: '1px',
-                    background: 'linear-gradient(90deg, transparent, rgba(255,60,60,0.5), transparent)',
+                    background: `linear-gradient(90deg, transparent, ${neonColor}55, transparent)`,
                     margin: '0 0 6px 0',
+                    position: 'relative',
                   }} />
                 )}
 
@@ -437,8 +395,9 @@ export default function Display() {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                    textShadow: '0 0 8px #ffe94d, 0 0 20px #ffcc00',
+                    textShadow: '0 0 6px #ffe94d, 0 0 16px #ffcc0088',
                     letterSpacing: '0.02em',
+                    position: 'relative',
                   }}>
                     📋 {booking.topic}
                   </p>
@@ -450,8 +409,9 @@ export default function Display() {
                     color: '#4dd9ff',
                     fontSize: '0.76em',
                     margin: '0 0 4px 0',
-                    textShadow: '0 0 8px #4dd9ff, 0 0 16px #00aaff',
+                    textShadow: '0 0 6px #4dd9ff, 0 0 14px #00aaff88',
                     letterSpacing: '0.02em',
+                    position: 'relative',
                   }}>
                     👤 {booking.booked_by}
                   </p>
@@ -463,9 +423,10 @@ export default function Display() {
                     color: '#cc88ff',
                     fontSize: '0.76em',
                     margin: '0',
-                    textShadow: '0 0 8px #cc88ff, 0 0 16px #9900ff',
+                    textShadow: '0 0 6px #cc88ff, 0 0 14px #9900ff88',
                     fontVariantNumeric: 'tabular-nums',
                     letterSpacing: '0.02em',
+                    position: 'relative',
                   }}>
                     ⏰ {booking.time_start || ''}
                     {booking.time_start && booking.time_end ? ' – ' : ''}
