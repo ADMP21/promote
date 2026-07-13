@@ -252,6 +252,30 @@ export default function Display() {
   const previousImage = prevIndex !== null ? images[prevIndex] : null
   const hasTicker = settings.show_footer_ticker && settings.ticker_text
 
+  // ── Pastel Color Palette ───────────────────────────────────────────────────
+  const BUSY = {
+    bg:         '#2a1a1a',           // พื้นหลังแดงเข้มมืด
+    border:     '#fca5a5',           // แดง Pastel
+    dot:        '#fca5a5',
+    glow:       '0 0 8px #fca5a5',
+    label:      '#fca5a5',           // "ใช้อยู่" — แดง Pastel
+    divider:    'rgba(252,165,165,0.2)',
+    topic:      '#fef08a',           // หัวข้อ — เหลืองนวล
+    organizer:  '#bae6fd',           // ผู้จัด — ฟ้าอ่อน
+    time:       '#d8b4fe',           // เวลา — ม่วงอ่อน
+  }
+  const FREE = {
+    bg:         '#1a1e2a',           // พื้นหลังน้ำเงินเข้มมืด
+    border:     '#86efac',           // เขียว Pastel
+    dot:        '#86efac',
+    glow:       'none',
+    label:      '#86efac',           // "ว่าง" — เขียว Pastel
+    divider:    'none',
+    topic:      'transparent',
+    organizer:  'transparent',
+    time:       'transparent',
+  }
+
   return (
     <div
       className={`display-mode display-theme-red ${hasTicker ? 'display-has-ticker' : ''} ${
@@ -290,93 +314,112 @@ export default function Display() {
         </div>
       )}
 
-      {/* Room Status — Pastel Theme */}
+      {/* ── Room Status ── */}
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
           {settings.rooms.map((room, index) => {
             const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
+            const P = isBusy ? BUSY : FREE
 
             return (
               <div
                 key={index}
                 className="display-room-card"
                 style={{
-                  background: isBusy ? '#1e2a1e' : '#1a1e2a',
-                  borderTop: `3px solid ${isBusy ? '#86efac' : '#93c5fd'}`,
+                  background: P.bg,
+                  borderTop: `3px solid ${P.border}`,
                   borderRadius: '8px',
+                  padding: '10px 12px',
                 }}
               >
                 {/* ── ชื่อห้อง + สถานะ ── */}
-                <div className="display-room-top">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  {/* ชื่อห้อง — ขาวนวล Bold */}
                   <p style={{
-                    color: '#f0f4ff',       // ขาวนวล
+                    color: '#f0f4ff',
                     fontWeight: 700,
-                    fontSize: '0.9em',
+                    fontSize: '0.88em',
                     margin: 0,
+                    letterSpacing: '0.01em',
                   }}>
                     {room.name}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+
+                  {/* Badge สถานะ */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'rgba(255,255,255,0.06)',
+                    borderRadius: '20px',
+                    padding: '2px 8px',
+                  }}>
                     <span style={{
-                      width: '8px', height: '8px',
+                      width: '7px',
+                      height: '7px',
                       borderRadius: '50%',
-                      background: isBusy ? '#86efac' : '#6ee7b7', // เขียว Pastel
-                      boxShadow: isBusy ? '0 0 6px #86efac' : 'none',
+                      background: P.dot,
+                      boxShadow: P.glow,
                       display: 'inline-block',
+                      flexShrink: 0,
                     }} />
                     <span style={{
-                      color: isBusy ? '#86efac' : '#6ee7b7',      // เขียว Pastel
-                      fontWeight: 600,
-                      fontSize: '0.78em',
+                      color: P.label,
+                      fontWeight: 700,
+                      fontSize: '0.75em',
+                      letterSpacing: '0.03em',
                     }}>
                       {isBusy ? 'ใช้อยู่' : 'ว่าง'}
                     </span>
                   </div>
                 </div>
 
-                {/* ── เส้นคั่น ── */}
+                {/* ── เส้นคั่น (เฉพาะห้องที่ใช้อยู่) ── */}
                 {isBusy && (
                   <div style={{
                     height: '1px',
-                    background: 'rgba(255,255,255,0.08)',
-                    margin: '5px 0',
+                    background: P.divider,
+                    margin: '7px 0 5px',
                   }} />
                 )}
 
-                {/* ── หัวข้อประชุม — ครีม/เหลืองนวล ── */}
+                {/* ── หัวข้อประชุม — เหลืองนวล ── */}
                 {booking?.topic && (
                   <p style={{
-                    color: '#fef08a',        // เหลืองนวล Pastel
+                    color: P.topic,
                     fontWeight: 600,
                     fontSize: '0.82em',
-                    margin: '2px 0',
+                    margin: '3px 0 0',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
+                    lineHeight: 1.4,
                   }}>
                     📋 {booking.topic}
                   </p>
                 )}
 
-                {/* ── ผู้จัด — ฟ้าอ่อน Pastel ── */}
+                {/* ── ผู้จัด — ฟ้าอ่อน ── */}
                 {booking?.booked_by && (
                   <p style={{
-                    color: '#bae6fd',        // ฟ้าอ่อน Pastel
-                    fontSize: '0.78em',
-                    margin: '2px 0',
+                    color: P.organizer,
+                    fontSize: '0.76em',
+                    margin: '3px 0 0',
+                    lineHeight: 1.4,
                   }}>
                     👤 {booking.booked_by}
                   </p>
                 )}
 
-                {/* ── เวลา — ม่วงอ่อน Pastel ── */}
+                {/* ── เวลา — ม่วงอ่อน ── */}
                 {(booking?.time_start || booking?.time_end) && (
                   <p style={{
-                    color: '#d8b4fe',        // ม่วงอ่อน Pastel
-                    fontSize: '0.78em',
-                    margin: '2px 0',
+                    color: P.time,
+                    fontSize: '0.76em',
+                    margin: '3px 0 0',
                     fontVariantNumeric: 'tabular-nums',
+                    lineHeight: 1.4,
                   }}>
                     ⏰ {booking.time_start || ''}
                     {booking.time_start && booking.time_end ? ' – ' : ''}
