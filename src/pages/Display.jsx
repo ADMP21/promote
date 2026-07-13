@@ -16,6 +16,9 @@ const DEFAULT_SETTINGS = {
   rooms: [],
 }
 
+// ── Normalize ชื่อห้อง: ตัดช่องว่าง + normalize unicode ──────────────────────
+const normalizeName = (s) => (s || '').trim().normalize('NFC').replace(/\s+/g, '')
+
 export default function Display() {
   const [images, setImages] = useState([])
   const [settings, setSettings] = useState(DEFAULT_SETTINGS)
@@ -31,11 +34,10 @@ export default function Display() {
 
   // ── ดึง Rooms จากระบบจอง ──────────────────────────────────────────────────
   const fetchRoomsFromBookingSystem = useCallback(async () => {
-    const { data, error } = await supabaseBooking
+    const { data } = await supabaseBooking
       .from('rooms')
       .select('id, name, floor, location, color')
       .order('name')
-    console.log('🏢 rooms fetched:', data, 'error:', error)
     if (data) setRooms(data)
   }, [])
 
@@ -52,14 +54,13 @@ export default function Display() {
     const todayStartUTC = new Date(`${bangkokDate}T00:00:00+07:00`).toISOString()
     const todayEndUTC = new Date(`${bangkokDate}T23:59:59+07:00`).toISOString()
 
-    const { data, error } = await supabaseBooking
+    const { data } = await supabaseBooking
       .from('bookings')
       .select('id, title, organizer, start_time, end_time, room_id')
       .gte('start_time', todayStartUTC)
       .lte('start_time', todayEndUTC)
       .order('start_time', { ascending: true })
 
-    console.log('📅 bookings fetched:', data, 'error:', error)
     if (data) setBookings(data)
   }, [])
 
@@ -153,7 +154,10 @@ export default function Display() {
 
       const map = {}
       settings.rooms.forEach((settingRoom) => {
-        const room = rooms.find((r) => r.name === settingRoom.name)
+        // ── match ชื่อห้องแบบยืดหยุ่น (normalize) ──
+        const room = rooms.find(
+          (r) => normalizeName(r.name) === normalizeName(settingRoom.name)
+        )
         if (!room) {
           map[settingRoom.name] = { isBusy: false, booking: null }
           return
@@ -193,14 +197,10 @@ export default function Display() {
         }
       })
 
-      console.log('🗺️ roomStatusMap computed:', map)
       setRoomStatusMap(map)
     }
 
-    // คำนวณทันที
     computeStatus()
-
-    // re-compute ทุก 1 นาที
     const interval = setInterval(computeStatus, 60_000)
     return () => clearInterval(interval)
   }, [settings.rooms, rooms, bookings])
