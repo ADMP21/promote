@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { th as thLocale } from 'date-fns/locale'
 import { supabase } from '../lib/supabase'
@@ -25,6 +25,7 @@ export default function Display() {
   const [clock, setClock] = useState(new Date())
   const [bookings, setBookings] = useState([])
   const [rooms, setRooms] = useState([])
+  const [roomStatusMap, setRoomStatusMap] = useState({})
   const intervalRef = useRef(null)
   const animationRef = useRef(null)
 
@@ -41,7 +42,6 @@ export default function Display() {
   // ── ดึง Bookings จากระบบจอง ───────────────────────────────────────────────
   const fetchBookingsFromBookingSystem = useCallback(async () => {
     const now = new Date()
-
     const bangkokDate = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Bangkok',
       year: 'numeric',
@@ -142,6 +142,69 @@ export default function Display() {
     }
   }, [fetchData, fetchBookingsFromBookingSystem])
 
+  // ── คำนวณ roomStatusMap ทุกครั้งที่ rooms หรือ bookings เปลี่ยน ────────────
+  useEffect(() => {
+    if (!settings.rooms?.length || !rooms.length) return
+
+    const computeStatus = () => {
+      const nowBangkok = new Date(
+        new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
+      )
+
+      const map = {}
+      settings.rooms.forEach((settingRoom) => {
+        const room = rooms.find((r) => r.name === settingRoom.name)
+        if (!room) {
+          map[settingRoom.name] = { isBusy: false, booking: null }
+          return
+        }
+
+        const activeBooking = bookings.find((b) => {
+          if (b.room_id !== room.id) return false
+          const startBKK = new Date(
+            new Date(b.start_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
+          )
+          const endBKK = new Date(
+            new Date(b.end_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
+          )
+          return nowBangkok >= startBKK && nowBangkok <= endBKK
+        })
+
+        map[settingRoom.name] = {
+          isBusy: !!activeBooking,
+          booking: activeBooking
+            ? {
+                topic: activeBooking.title,
+                booked_by: activeBooking.organizer,
+                time_start: new Date(activeBooking.start_time).toLocaleTimeString('th-TH', {
+                  timeZone: 'Asia/Bangkok',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }),
+                time_end: new Date(activeBooking.end_time).toLocaleTimeString('th-TH', {
+                  timeZone: 'Asia/Bangkok',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }),
+              }
+            : null,
+        }
+      })
+
+      console.log('🗺️ roomStatusMap computed:', map)
+      setRoomStatusMap(map)
+    }
+
+    // คำนวณทันที
+    computeStatus()
+
+    // re-compute ทุก 1 นาที
+    const interval = setInterval(computeStatus, 60_000)
+    return () => clearInterval(interval)
+  }, [settings.rooms, rooms, bookings])
+
   // ── Clock ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 1000)
@@ -223,69 +286,6 @@ export default function Display() {
     )
   }
 
-  // ── Room Status Map (useMemo → re-compute ทุกครั้งที่ rooms/bookings เปลี่ยน) ──
-  const roomStatusMap = useMemo(() => {
-    const map = {}
-    if (!settings.rooms || rooms.length === 0) return map
-
-    const nowBangkok = new Date(
-      new Date().toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
-    )
-
-    settings.rooms.forEach((settingRoom) => {
-      const room = rooms.find((r) => r.name === settingRoom.name)
-      if (!room) {
-        map[settingRoom.name] = { isBusy: false, booking: null }
-        return
-      }
-
-      const activeBooking = bookings.find((b) => {
-        if (b.room_id !== room.id) return false
-        const startBKK = new Date(
-          new Date(b.start_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
-        )
-        const endBKK = new Date(
-          new Date(b.end_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' })
-        )
-        return nowBangkok >= startBKK && nowBangkok <= endBKK
-      })
-
-      map[settingRoom.name] = {
-        isBusy: !!activeBooking,
-        booking: activeBooking
-          ? {
-              topic: activeBooking.title,
-              booked_by: activeBooking.organizer,
-              time_start: new Date(activeBooking.start_time).toLocaleTimeString('th-TH', {
-                timeZone: 'Asia/Bangkok',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              }),
-              time_end: new Date(activeBooking.end_time).toLocaleTimeString('th-TH', {
-                timeZone: 'Asia/Bangkok',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              }),
-            }
-          : null,
-      }
-    })
-
-    return map
-  }, [settings.rooms, rooms, bookings])
-
-  // ── Clock Tick → re-compute roomStatusMap ทุก 1 นาที ──────────────────────
-  const [tick, setTick] = useState(0)
-  useEffect(() => {
-    const t = setInterval(() => setTick((n) => n + 1), 60_000)
-    return () => clearInterval(t)
-  }, [])
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const roomStatusMapWithTick = useMemo(() => roomStatusMap, [roomStatusMap, tick])
-
   const currentImage = images[currentIndex]
   const previousImage = prevIndex !== null ? images[prevIndex] : null
   const hasTicker = settings.show_footer_ticker && settings.ticker_text
@@ -334,7 +334,7 @@ export default function Display() {
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
           {settings.rooms.map((room, index) => {
-            const status = roomStatusMapWithTick[room.name] ?? { isBusy: false, booking: null }
+            const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
             return (
               <div key={index} className="display-room-card">
