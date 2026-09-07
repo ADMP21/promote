@@ -290,145 +290,215 @@ export default function Display() {
         </div>
       )}
 
-      {/* ── Room Status — Neon Glow (ไม่กระพริบ) ── */}
+      {/* ── Room Status — Corporate Executive Style (เป็นทางการ เหมาะกับบริษัท) ── */}
       {settings.rooms && settings.rooms.length > 0 && (
         <div className="display-rooms">
           {settings.rooms.map((room, index) => {
             const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
 
-            // ── Neon color ตามสถานะ ──
-            const neonColor = isBusy ? '#ff4444' : '#39ff14'
-            const neonGlow  = isBusy
-              ? '0 0 6px #ff4444, 0 0 14px #ff2222, 0 0 28px #ff000066'
-              : '0 0 6px #39ff14, 0 0 14px #39ff14, 0 0 28px #00cc0066'
+            // ── สีและแสงแบบทางการระดับองค์กร (Corporate Palette & Soft Glow) ──
+            const statusColor = isBusy ? '#ef4444' : '#10b981'
+            const badgeTextColor = isBusy ? '#f87171' : '#34d399'
+            const badgeBg = isBusy ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)'
+            const badgeBorder = isBusy ? '1px solid rgba(239, 68, 68, 0.28)' : '1px solid rgba(16, 185, 129, 0.28)'
+            const cardBorder = isBusy ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(16, 185, 129, 0.22)'
+            const cardShadow = isBusy
+              ? '0 4px 20px -2px rgba(0, 0, 0, 0.55), 0 0 14px -2px rgba(239, 68, 68, 0.12)'
+              : '0 4px 20px -2px rgba(0, 0, 0, 0.55), 0 0 14px -2px rgba(16, 185, 129, 0.12)'
+            const dotGlow = isBusy
+              ? '0 0 6px rgba(239, 68, 68, 0.55)'
+              : '0 0 6px rgba(16, 185, 129, 0.55)'
 
             return (
               <div
                 key={index}
                 className="display-room-card"
                 style={{
-                  background: '#0a0a0a',
-                  border: `1.5px solid ${neonColor}`,
+                  background: 'linear-gradient(145deg, rgba(22, 27, 38, 0.94) 0%, rgba(13, 17, 24, 0.98) 100%)',
+                  border: cardBorder,
                   borderRadius: '10px',
-                  padding: '10px 12px',
-                  boxShadow: neonGlow,
+                  padding: '10px 14px',
+                  boxShadow: cardShadow,
                   position: 'relative',
                   overflow: 'hidden',
+                  backdropFilter: 'blur(8px)',
                 }}
               >
-                {/* พื้นหลัง glow overlay */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  borderRadius: '10px',
-                  background: isBusy
-                    ? 'radial-gradient(ellipse at 50% 0%, rgba(255,68,68,0.10) 0%, transparent 65%)'
-                    : 'radial-gradient(ellipse at 50% 0%, rgba(57,255,20,0.07) 0%, transparent 65%)',
-                  pointerEvents: 'none',
-                }} />
+                {/* แถบแสงระบุสถานะด้านบน (Top accent status bar) */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '2.5px',
+                    background: isBusy
+                      ? 'linear-gradient(90deg, #ef4444, rgba(239, 68, 68, 0.25))'
+                      : 'linear-gradient(90deg, #10b981, rgba(16, 185, 129, 0.25))',
+                  }}
+                />
 
-                {/* ── ชื่อห้อง ── */}
-                <p style={{
-                  color: '#ffffff',
-                  fontWeight: 800,
-                  fontSize: '0.9em',
-                  margin: '0 0 6px 0',
-                  letterSpacing: '0.04em',
-                  textShadow: '0 0 6px rgba(255,255,255,0.7), 0 0 14px rgba(255,255,255,0.3)',
-                  position: 'relative',
-                }}>
-                  {room.name}
-                </p>
+                {/* แสง Ambient Glow นุ่มนวลด้านหลังการ์ด */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    borderRadius: '10px',
+                    background: isBusy
+                      ? 'radial-gradient(ellipse at 20% 0%, rgba(239, 68, 68, 0.07) 0%, transparent 65%)'
+                      : 'radial-gradient(ellipse at 20% 0%, rgba(16, 185, 129, 0.06) 0%, transparent 65%)',
+                    pointerEvents: 'none',
+                  }}
+                />
 
-                {/* ── Badge สถานะ ── */}
-                <div style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  border: `1px solid ${neonColor}`,
-                  borderRadius: '4px',
-                  padding: '2px 8px',
-                  marginBottom: isBusy && booking ? '7px' : '0',
-                  background: isBusy
-                    ? 'rgba(255,68,68,0.10)'
-                    : 'rgba(57,255,20,0.08)',
-                  position: 'relative',
-                }}>
-                  <span style={{
-                    width: '7px',
-                    height: '7px',
-                    borderRadius: '50%',
-                    background: neonColor,
-                    boxShadow: neonGlow,
-                    display: 'inline-block',
-                    flexShrink: 0,
-                  }} />
-                  <span style={{
-                    color: neonColor,
-                    fontWeight: 700,
-                    fontSize: '0.75em',
-                    letterSpacing: '0.06em',
-                    textShadow: neonGlow,
-                  }}>
-                    {isBusy ? 'ใช้อยู่' : 'ว่าง'}
-                  </span>
+                {/* ── แถวบน: ชื่อห้อง + Badge สถานะ ── */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '8px',
+                    position: 'relative',
+                    marginBottom: isBusy && booking ? '6px' : '0',
+                  }}
+                >
+                  <p
+                    style={{
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: '0.92em',
+                      margin: 0,
+                      letterSpacing: '0.02em',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    {room.name}
+                  </p>
+
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: badgeBorder,
+                      borderRadius: '5px',
+                      padding: '2px 8px',
+                      background: badgeBg,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        background: statusColor,
+                        boxShadow: dotGlow,
+                        display: 'inline-block',
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span
+                      style={{
+                        color: badgeTextColor,
+                        fontWeight: 600,
+                        fontSize: '0.75em',
+                        letterSpacing: '0.03em',
+                      }}
+                    >
+                      {isBusy ? 'ใช้อยู่' : 'ว่าง'}
+                    </span>
+                  </div>
                 </div>
 
-                {/* ── เส้นคั่น ── */}
+                {/* ── สถานะเมื่อห้องว่าง ── */}
+                {!isBusy && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      marginTop: '4px',
+                      position: 'relative',
+                    }}
+                  >
+                    <span style={{ color: '#10b981', fontSize: '0.72em' }}>●</span>
+                    <span style={{ color: '#94a3b8', fontSize: '0.75em', letterSpacing: '0.02em' }}>
+                      พร้อมใช้งาน
+                    </span>
+                  </div>
+                )}
+
+                {/* ── เส้นคั่นเมื่อมีการประชุม ── */}
                 {isBusy && booking && (
-                  <div style={{
-                    height: '1px',
-                    background: `linear-gradient(90deg, transparent, ${neonColor}55, transparent)`,
-                    margin: '0 0 6px 0',
-                    position: 'relative',
-                  }} />
+                  <div
+                    style={{
+                      height: '1px',
+                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent)',
+                      margin: '6px 0 6px 0',
+                      position: 'relative',
+                    }}
+                  />
                 )}
 
-                {/* ── หัวข้อประชุม — เหลือง Neon ── */}
-                {booking?.topic && (
-                  <p style={{
-                    color: '#ffe94d',
-                    fontWeight: 600,
-                    fontSize: '0.8em',
-                    margin: '0 0 4px 0',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    textShadow: '0 0 6px #ffe94d, 0 0 16px #ffcc0088',
-                    letterSpacing: '0.02em',
-                    position: 'relative',
-                  }}>
-                    📋 {booking.topic}
+                {/* ── หัวข้อประชุม — โทนขาวสว่างสุภาพ ── */}
+                {isBusy && booking?.topic && (
+                  <p
+                    style={{
+                      color: '#f1f5f9',
+                      fontWeight: 600,
+                      fontSize: '0.8em',
+                      margin: '0 0 3px 0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      letterSpacing: '0.01em',
+                      position: 'relative',
+                    }}
+                  >
+                    <span style={{ opacity: 0.8, marginRight: '4px' }}>📋</span>
+                    {booking.topic}
                   </p>
                 )}
 
-                {/* ── ผู้จัด — ฟ้า Neon ── */}
-                {booking?.booked_by && (
-                  <p style={{
-                    color: '#4dd9ff',
-                    fontSize: '0.76em',
-                    margin: '0 0 4px 0',
-                    textShadow: '0 0 6px #4dd9ff, 0 0 14px #00aaff88',
-                    letterSpacing: '0.02em',
-                    position: 'relative',
-                  }}>
-                    👤 {booking.booked_by}
+                {/* ── ผู้จัด — โทนเทาสุภาพ ── */}
+                {isBusy && booking?.booked_by && (
+                  <p
+                    style={{
+                      color: '#94a3b8',
+                      fontSize: '0.76em',
+                      margin: '0 0 3px 0',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      letterSpacing: '0.01em',
+                      position: 'relative',
+                    }}
+                  >
+                    <span style={{ opacity: 0.8, marginRight: '4px' }}>👤</span>
+                    {booking.booked_by}
                   </p>
                 )}
 
-                {/* ── เวลา — ม่วง Neon ── */}
-                {(booking?.time_start || booking?.time_end) && (
-                  <p style={{
-                    color: '#cc88ff',
-                    fontSize: '0.76em',
-                    margin: '0',
-                    textShadow: '0 0 6px #cc88ff, 0 0 14px #9900ff88',
-                    fontVariantNumeric: 'tabular-nums',
-                    letterSpacing: '0.02em',
-                    position: 'relative',
-                  }}>
-                    ⏰ {booking.time_start || ''}
+                {/* ── เวลา — โทนฟ้าไอซ์บลูอ่านง่ายและเป็นระเบียบ ── */}
+                {isBusy && (booking?.time_start || booking?.time_end) && (
+                  <p
+                    style={{
+                      color: '#7dd3fc',
+                      fontSize: '0.76em',
+                      margin: '0',
+                      fontVariantNumeric: 'tabular-nums',
+                      letterSpacing: '0.02em',
+                      position: 'relative',
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span style={{ opacity: 0.8, marginRight: '4px' }}>⏰</span>
+                    {booking.time_start || ''}
                     {booking.time_start && booking.time_end ? ' – ' : ''}
                     {booking.time_end || ''}
                   </p>
