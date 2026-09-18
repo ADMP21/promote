@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { th as thLocale } from 'date-fns/locale'
+import { Clock3, FileText, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { supabaseBooking } from '../lib/supabaseBooking'
 import { th } from '../i18n/th'
@@ -12,7 +13,7 @@ const DEFAULT_SETTINGS = {
   fullscreen_mode: true,
   show_header_overlay: true,
   show_footer_ticker: true,
-  ticker_text: 'ยินดีต้อนรับสู่ระบบ AOT Digital Signage',
+  ticker_text: 'บริษัทเชียงใหม่โฟรเซ่นฟู้ดส์ จำกัด',
   rooms: [],
 }
 
@@ -215,34 +216,16 @@ export default function Display() {
     return () => clearInterval(intervalRef.current)
   }, [images.length, settings.slide_interval, goToNext])
 
-  const transitionClass = settings.transition_effect
-
   const renderSlide = (image, type) => {
     if (!image) return null
-    const isEnter = type === 'enter'
-    const isExit = type === 'exit'
-    let className = 'absolute inset-0 flex items-center justify-center'
-
-    if (transitionClass === 'fade') {
-      if (isEnter && animating) className = 'absolute inset-0 flex items-center justify-center slide-fade-enter'
-      else if (isEnter) className += ' slide-fade-enter-active'
-      if (isExit) className = 'absolute inset-0 flex items-center justify-center slide-fade-exit'
-    } else if (transitionClass === 'slide-left') {
-      if (isEnter && animating) className = 'absolute inset-0 flex items-center justify-center slide-left-enter'
-      else if (isEnter) className += ' slide-left-enter-active'
-      if (isExit) className = 'absolute inset-0 flex items-center justify-center slide-left-exit'
-    } else if (transitionClass === 'slide-right') {
-      if (isEnter && animating) className = 'absolute inset-0 flex items-center justify-center slide-right-enter'
-      else if (isEnter) className += ' slide-right-enter-active'
-      if (isExit) className = 'absolute inset-0 flex items-center justify-center slide-right-exit'
-    } else if (transitionClass === 'zoom') {
-      if (isEnter && animating) className = 'absolute inset-0 flex items-center justify-center zoom-enter'
-      else if (isEnter) className += ' zoom-enter-active'
-      if (isExit) className = 'absolute inset-0 flex items-center justify-center zoom-exit'
-    }
+    const transition = settings.transition_effect || 'fade'
+    const stateClass = type === 'static' ? '' : `display-slide--${type}`
 
     return (
-      <div key={`${image.id}-${type}`} className={className}>
+      <div
+        key={`${image.id}-${type}`}
+        className={`display-slide display-slide--${transition} ${stateClass}`}
+      >
         <img src={image.image_url} alt={image.title} className="display-slide-img" draggable={false} />
       </div>
     )
@@ -251,26 +234,32 @@ export default function Display() {
   const currentImage = images[currentIndex]
   const previousImage = prevIndex !== null ? images[prevIndex] : null
   const hasTicker = settings.show_footer_ticker && settings.ticker_text
+  const hasRooms = settings.rooms?.length > 0
 
   return (
-    <div
-      className={`display-mode display-theme-red ${hasTicker ? 'display-has-ticker' : ''} ${
-        settings.show_header_overlay ? 'display-has-header' : 'display-has-logo-only'
-      }`}
-    >
-      {/* Logo */}
-      <div className="display-logo">
-        <img src="/cm-logo.png" alt="CM Logo" className="display-logo-img" draggable={false} />
-      </div>
+    <div className={`display-mode display-poster ${hasTicker ? 'display-has-ticker' : ''} ${hasRooms ? 'display-has-rooms' : ''}`}>
+      <img className="display-brand-background" src="/display-brand-bg.png" alt="" aria-hidden="true" />
 
-      {/* Slideshow */}
-      <div className="display-stage">
+      <header className={`display-header ${settings.show_header_overlay ? '' : 'display-header--compact'}`}>
+        <div className="display-brand">
+          <img src="/cm-logo.png" alt="CM Logo" className="display-logo-img" draggable={false} />
+        </div>
+
+        {settings.show_header_overlay && (
+          <div className="display-clock">
+            <p className="display-clock-date">{format(clock, 'EEEE d MMMM yyyy', { locale: thLocale })}</p>
+            <p className="display-clock-time">{format(clock, 'HH:mm')}</p>
+          </div>
+        )}
+      </header>
+
+      <main className="display-stage">
         {images.length === 0 ? (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-4 px-6">
+          <div className="display-empty-state">
             <div className="display-empty-badge">{th.display.noContent}</div>
           </div>
         ) : (
-          <div className="relative h-full w-full">
+          <div className="display-media-frame">
             {!animating && renderSlide(currentImage, 'static')}
             {animating && (
               <>
@@ -280,244 +269,61 @@ export default function Display() {
             )}
           </div>
         )}
-      </div>
+      </main>
 
-      {/* Clock */}
-      {settings.show_header_overlay && (
-        <div className="display-clock">
-          <p className="display-clock-date">{format(clock, 'EEEE d MMMM yyyy', { locale: thLocale })}</p>
-          <p className="display-clock-time">{format(clock, 'HH:mm:ss')}</p>
-        </div>
-      )}
-
-      {/* ── Room Status — Corporate Executive Style (เป็นทางการ เหมาะกับบริษัท) ── */}
-      {settings.rooms && settings.rooms.length > 0 && (
-        <div className="display-rooms">
-          {settings.rooms.map((room, index) => {
+      {hasRooms && (
+        <section className="display-rooms" aria-label="สถานะห้องประชุม">
+          {settings.rooms.map((room) => {
             const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
 
-            // ── สีและแสงแบบทางการระดับองค์กร (Corporate Palette & Soft Glow) ──
-            const statusColor = isBusy ? '#ef4444' : '#10b981'
-            const badgeTextColor = isBusy ? '#f87171' : '#34d399'
-            const badgeBg = isBusy ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)'
-            const badgeBorder = isBusy ? '1px solid rgba(239, 68, 68, 0.28)' : '1px solid rgba(16, 185, 129, 0.28)'
-            const cardBorder = isBusy ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid rgba(16, 185, 129, 0.22)'
-            const cardShadow = isBusy
-              ? '0 4px 20px -2px rgba(0, 0, 0, 0.55), 0 0 14px -2px rgba(239, 68, 68, 0.12)'
-              : '0 4px 20px -2px rgba(0, 0, 0, 0.55), 0 0 14px -2px rgba(16, 185, 129, 0.12)'
-            const dotGlow = isBusy
-              ? '0 0 6px rgba(239, 68, 68, 0.55)'
-              : '0 0 6px rgba(16, 185, 129, 0.55)'
-
             return (
-              <div
-                key={index}
-                className="display-room-card"
-                style={{
-                  background: 'linear-gradient(145deg, rgba(22, 27, 38, 0.94) 0%, rgba(13, 17, 24, 0.98) 100%)',
-                  border: cardBorder,
-                  borderRadius: '10px',
-                  padding: '10px 14px',
-                  boxShadow: cardShadow,
-                  position: 'relative',
-                  overflow: 'hidden',
-                  backdropFilter: 'blur(8px)',
-                }}
+              <article
+                key={room.id || room.name}
+                className={`display-room-card ${isBusy ? 'display-room-card--busy' : 'display-room-card--free'}`}
               >
-                {/* แถบแสงระบุสถานะด้านบน (Top accent status bar) */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '2.5px',
-                    background: isBusy
-                      ? 'linear-gradient(90deg, #ef4444, rgba(239, 68, 68, 0.25))'
-                      : 'linear-gradient(90deg, #10b981, rgba(16, 185, 129, 0.25))',
-                  }}
-                />
-
-                {/* แสง Ambient Glow นุ่มนวลด้านหลังการ์ด */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: '10px',
-                    background: isBusy
-                      ? 'radial-gradient(ellipse at 20% 0%, rgba(239, 68, 68, 0.07) 0%, transparent 65%)'
-                      : 'radial-gradient(ellipse at 20% 0%, rgba(16, 185, 129, 0.06) 0%, transparent 65%)',
-                    pointerEvents: 'none',
-                  }}
-                />
-
-                {/* ── แถวบน: ชื่อห้อง + Badge สถานะ ── */}
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: '8px',
-                    position: 'relative',
-                    marginBottom: isBusy && booking ? '6px' : '0',
-                  }}
-                >
-                  <p
-                    style={{
-                      color: '#ffffff',
-                      fontWeight: 700,
-                      fontSize: '0.92em',
-                      margin: 0,
-                      letterSpacing: '0.02em',
-                      textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    }}
-                  >
-                    {room.name}
-                  </p>
-
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      border: badgeBorder,
-                      borderRadius: '5px',
-                      padding: '2px 8px',
-                      background: badgeBg,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: '7px',
-                        height: '7px',
-                        borderRadius: '50%',
-                        background: statusColor,
-                        boxShadow: dotGlow,
-                        display: 'inline-block',
-                        flexShrink: 0,
-                      }}
-                    />
-                    <span
-                      style={{
-                        color: badgeTextColor,
-                        fontWeight: 600,
-                        fontSize: '0.75em',
-                        letterSpacing: '0.03em',
-                      }}
-                    >
-                      {isBusy ? 'ใช้อยู่' : 'ว่าง'}
-                    </span>
+                <div className="display-room-heading">
+                  <div className="display-room-title-wrap">
+                    <h2 className="display-room-name">{room.name}</h2>
+                    <div className={`display-room-status ${isBusy ? 'display-room-status--busy' : 'display-room-status--free'}`}>
+                      <span className="display-room-dot" aria-hidden="true" />
+                      <span>{isBusy ? 'ไม่ว่าง' : 'ว่าง'}</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* ── สถานะเมื่อห้องว่าง ── */}
-                {!isBusy && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      marginTop: '4px',
-                      position: 'relative',
-                    }}
-                  >
-                    <span style={{ color: '#10b981', fontSize: '0.72em' }}>●</span>
-                    <span style={{ color: '#94a3b8', fontSize: '0.75em', letterSpacing: '0.02em' }}>
-                      พร้อมใช้งาน
-                    </span>
+                {!isBusy && <p className="display-room-ready">พร้อมใช้งาน</p>}
+
+                {isBusy && booking && (
+                  <div className="display-room-details">
+                    {booking.topic && (
+                      <p><FileText aria-hidden="true" /><span>{booking.topic}</span></p>
+                    )}
+                    {booking.booked_by && (
+                      <p><UserRound aria-hidden="true" /><span>{booking.booked_by}</span></p>
+                    )}
+                    {(booking.time_start || booking.time_end) && (
+                      <p className="display-room-time">
+                        <Clock3 aria-hidden="true" />
+                        <span>{booking.time_start || ''}{booking.time_start && booking.time_end ? ' – ' : ''}{booking.time_end || ''}</span>
+                      </p>
+                    )}
                   </div>
                 )}
-
-                {/* ── เส้นคั่นเมื่อมีการประชุม ── */}
-                {isBusy && booking && (
-                  <div
-                    style={{
-                      height: '1px',
-                      background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent)',
-                      margin: '6px 0 6px 0',
-                      position: 'relative',
-                    }}
-                  />
-                )}
-
-                {/* ── หัวข้อประชุม — โทนขาวสว่างสุภาพ ── */}
-                {isBusy && booking?.topic && (
-                  <p
-                    style={{
-                      color: '#f1f5f9',
-                      fontWeight: 600,
-                      fontSize: '0.8em',
-                      margin: '0 0 3px 0',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      letterSpacing: '0.01em',
-                      position: 'relative',
-                    }}
-                  >
-                    <span style={{ opacity: 0.8, marginRight: '4px' }}>📋</span>
-                    {booking.topic}
-                  </p>
-                )}
-
-                {/* ── ผู้จัด — โทนเทาสุภาพ ── */}
-                {isBusy && booking?.booked_by && (
-                  <p
-                    style={{
-                      color: '#94a3b8',
-                      fontSize: '0.76em',
-                      margin: '0 0 3px 0',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      letterSpacing: '0.01em',
-                      position: 'relative',
-                    }}
-                  >
-                    <span style={{ opacity: 0.8, marginRight: '4px' }}>👤</span>
-                    {booking.booked_by}
-                  </p>
-                )}
-
-                {/* ── เวลา — โทนฟ้าไอซ์บลูอ่านง่ายและเป็นระเบียบ ── */}
-                {isBusy && (booking?.time_start || booking?.time_end) && (
-                  <p
-                    style={{
-                      color: '#7dd3fc',
-                      fontSize: '0.76em',
-                      margin: '0',
-                      fontVariantNumeric: 'tabular-nums',
-                      letterSpacing: '0.02em',
-                      position: 'relative',
-                      fontWeight: 500,
-                    }}
-                  >
-                    <span style={{ opacity: 0.8, marginRight: '4px' }}>⏰</span>
-                    {booking.time_start || ''}
-                    {booking.time_start && booking.time_end ? ' – ' : ''}
-                    {booking.time_end || ''}
-                  </p>
-                )}
-              </div>
+              </article>
             )
           })}
-        </div>
+        </section>
       )}
 
-      {/* Ticker */}
       {hasTicker && (
-        <div className="display-ticker">
+        <footer className="display-ticker">
           <div className="display-ticker-track">
             <span>{settings.ticker_text}</span>
-            <span className="display-ticker-dot">•</span>
-            <span>{settings.ticker_text}</span>
+            <span className="display-ticker-dot" aria-hidden="true">•</span>
+            <span aria-hidden="true">{settings.ticker_text}</span>
           </div>
-        </div>
+        </footer>
       )}
     </div>
   )
