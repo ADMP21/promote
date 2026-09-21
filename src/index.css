@@ -624,33 +624,16 @@ input[type="range"]::-webkit-slider-thumb {
   left: 0;
   z-index: 30;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: clamp(20px, 4vw, 54px);
+  gap: clamp(12px, 3vw, 36px);
   min-width: 0;
-  min-height: clamp(96px, 8.5vh, 164px);
-  padding: clamp(12px, 1.8vw, 20px) clamp(18px, 3vw, 36px);
-  overflow: hidden;
-  background: rgba(55, 2, 6, 0.3);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(5px) saturate(1.12);
-  -webkit-backdrop-filter: blur(5px) saturate(1.12);
+  padding: clamp(14px, 2.4vw, 28px) clamp(18px, 3vw, 36px);
+  pointer-events: none;
 }
 
 .display-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    linear-gradient(90deg, rgba(77, 0, 5, 0.38), rgba(31, 0, 2, 0.2)),
-    url('/display-brand-bg.png');
-  background-size: 100% 100%, 100% auto;
-  background-position: center, top center;
-  background-repeat: no-repeat;
-  opacity: 0.68;
-  pointer-events: none;
+  content: none;
 }
 
 .display-header > * {
@@ -666,36 +649,37 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   align-items: center;
   min-width: 0;
+  padding-top: clamp(4px, 0.6vw, 8px);
 }
 
 .display-poster .display-logo-img {
-  width: clamp(115px, 22vw, 240px);
+  width: clamp(120px, 22vw, 245px);
   height: auto;
-  max-height: clamp(70px, 9vh, 118px);
+  max-height: clamp(65px, 7.8vh, 110px);
   object-fit: contain;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.42));
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.45));
 }
 
 .display-poster .display-clock {
   position: static;
   z-index: auto;
   flex-shrink: 0;
+  width: clamp(200px, 31.5vw, 345px);
   min-width: 0;
-  padding: 0 0 0 clamp(18px, 3vw, 34px);
-  border: 0;
-  border-left: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  padding: clamp(9px, 1.4vw, 16px) clamp(12px, 2vw, 22px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: clamp(24px, 4vw, 44px) clamp(24px, 4vw, 44px) clamp(28px, 4vw, 44px) clamp(42px, 6vw, 68px);
+  background: rgba(8, 15, 36, 0.76);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.42), 0 0 13px rgba(237, 28, 36, 0.55), inset 0 -2px 0 rgba(237, 28, 36, 0.8);
+  backdrop-filter: blur(10px) saturate(1.2);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
   text-align: right;
 }
 
 .display-poster .display-clock-date {
   margin: 0 0 clamp(2px, 0.6vw, 8px);
   color: #fff;
-  font-size: clamp(14px, 2.2vw, 24px);
+  font-size: clamp(14px, 2.35vw, 26px);
   font-weight: 700;
   line-height: 1.1;
   opacity: 1;
@@ -706,7 +690,7 @@ input[type="range"]::-webkit-slider-thumb {
 .display-poster .display-clock-time {
   margin: 0;
   color: #fff;
-  font-size: clamp(34px, 6.2vw, 68px);
+  font-size: clamp(40px, 7.4vw, 82px);
   font-weight: 900;
   line-height: 0.95;
   letter-spacing: 0.02em;
@@ -829,10 +813,10 @@ input[type="range"]::-webkit-slider-thumb {
   gap: 0;
   width: auto;
   margin: 0;
-  padding: clamp(10px, 1.8vw, 20px);
+  padding: clamp(7px, 1vw, 12px);
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.36);
-  border-radius: clamp(16px, 2.8vw, 30px);
+  border-radius: clamp(14px, 2vw, 24px);
   background: rgba(5, 13, 18, 0.7);
   box-shadow: 0 24px 54px rgba(0, 0, 0, 0.48);
   backdrop-filter: blur(22px) saturate(1.2);
@@ -848,11 +832,11 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: clamp(7px, 1.1vw, 13px);
+  gap: clamp(4px, 0.6vw, 7px);
   min-width: 0;
-  min-height: clamp(126px, 14vh, 190px);
-  padding: clamp(14px, 2.4vw, 28px) clamp(16px, 2.8vw, 32px);
-  overflow: hidden;
+  min-height: clamp(105px, 9vh, 146px);
+  padding: clamp(10px, 1.2vw, 14px) clamp(12px, 1.6vw, 18px);
+  overflow: visible;
   border: 0;
   border-left: clamp(4px, 0.65vw, 7px) solid #10b981;
   border-radius: 0;
@@ -882,37 +866,40 @@ input[type="range"]::-webkit-slider-thumb {
   display: flex;
   align-items: center;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: flex-start;
-  gap: clamp(10px, 1.6vw, 18px);
+  gap: 4px clamp(8px, 1vw, 12px);
   min-width: 0;
   width: 100%;
 }
 
 .display-poster .display-room-name {
+  flex: 0 1 auto;
   min-width: 0;
   margin: 0;
-  overflow: hidden;
+  overflow: visible;
   color: #fff;
-  font-size: clamp(19px, 2.9vw, 34px);
+  font-size: clamp(17px, 2.5vw, 28px);
   font-weight: 750;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  text-overflow: clip;
+  white-space: normal;
 }
 
 .display-poster .display-room-status {
   display: inline-flex;
   align-items: center;
-  gap: clamp(7px, 1vw, 12px);
+  gap: clamp(5px, 0.7vw, 8px);
   flex-shrink: 0;
-  font-size: clamp(16px, 2.35vw, 27px);
+  font-size: clamp(14px, 1.95vw, 22px);
   font-weight: 750;
   line-height: 1;
 }
 
 .display-poster .display-room-dot {
-  width: clamp(11px, 1.9vw, 21px);
-  height: clamp(11px, 1.9vw, 21px);
+  width: clamp(9px, 1.35vw, 15px);
+  height: clamp(9px, 1.35vw, 15px);
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 14px currentColor;
@@ -924,30 +911,31 @@ input[type="range"]::-webkit-slider-thumb {
 .display-room-ready {
   margin: 0;
   color: #c5ccd5;
-  font-size: clamp(16px, 2.35vw, 27px);
+  font-size: clamp(14px, 1.8vw, 20px);
 }
 
 .display-room-details {
   display: grid;
-  gap: clamp(3px, 0.65vw, 8px);
+  gap: clamp(2px, 0.4vw, 5px);
   margin-left: 0;
 }
 
 .display-room-details p {
   display: flex;
   align-items: center;
-  gap: clamp(7px, 1.1vw, 12px);
+  gap: clamp(5px, 0.7vw, 8px);
   min-width: 0;
   margin: 0;
   color: #e7ebf0;
-  font-size: clamp(15px, 2.15vw, 25px);
-  line-height: 1.25;
+  font-size: clamp(13px, 1.7vw, 19px);
+  line-height: 1.2;
 }
 
 .display-room-details p span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .display-room-details svg {
@@ -1019,7 +1007,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 @media (orientation: landscape) {
   .display-header {
-    padding: 10px clamp(18px, 2.4vw, 34px);
+    padding: clamp(12px, 2vh, 20px) clamp(18px, 2.4vw, 34px);
   }
 
   .display-poster .display-logo-img {
@@ -1033,6 +1021,12 @@ input[type="range"]::-webkit-slider-thumb {
 
   .display-poster .display-clock-time {
     font-size: clamp(32px, 4vw, 58px);
+  }
+
+  .display-poster .display-clock {
+    width: auto;
+    padding: 9px 16px;
+    border-radius: 22px 22px 24px 32px;
   }
 
   .display-poster .display-stage {
@@ -1080,15 +1074,39 @@ input[type="range"]::-webkit-slider-thumb {
   .display-poster .display-clock {
     top: auto !important;
     right: auto !important;
-    padding: 0 0 0 clamp(18px, 3vw, 34px) !important;
+    padding: clamp(9px, 1.4vw, 16px) clamp(12px, 2vw, 22px) !important;
   }
 
   .display-poster .display-clock-date {
-    font-size: clamp(14px, 2.2vw, 24px) !important;
+    font-size: clamp(14px, 2.35vw, 26px) !important;
   }
 
   .display-poster .display-clock-time {
-    font-size: clamp(34px, 6.2vw, 68px) !important;
+    font-size: clamp(40px, 7.4vw, 82px) !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 600px) {
+  .display-header {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .display-poster .display-logo-img {
+    width: clamp(105px, 27vw, 160px);
+  }
+
+  .display-poster .display-clock {
+    width: clamp(190px, 53vw, 280px);
+    padding: 10px 12px !important;
+  }
+
+  .display-poster .display-clock-date {
+    font-size: clamp(12px, 3.5vw, 18px) !important;
+  }
+
+  .display-poster .display-clock-time {
+    font-size: clamp(37px, 10vw, 60px) !important;
   }
 }
 

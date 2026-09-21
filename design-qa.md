@@ -1,54 +1,43 @@
-# Design QA - Portrait Immersive Poster Display
+# Design QA — Floating Header
 
-- Source visual truth: `C:\Users\IT-CMFrozenfood\.codex\generated_images\01a0b359-8278-7543-8097-4570afdb7d4e\exec-7db58cc7-77db-4dfd-a89f-9d99a6ccaa7b.png`
-- Implementation route: `/display`
-- Intended CSS viewport: 1080 x 1920, portrait
-- Source pixels: 942 x 1668 (approximately 9:16)
-- Latest implementation screenshot: unavailable; no Browser surface is connected in this session
-- Density normalization: not possible without a post-change browser capture
-- State: slideshow, four room statuses, header overlay enabled, footer enabled
+- Source visual truth: `C:\Users\IT-CMFrozenfood\.codex\generated_images\01a0b359-8278-7543-8097-4570afdb7d4e\exec-c8953302-26df-43cd-8ec5-3d0629863ab9.png` (user-attached reference)
+- Target region: header of `/display` only; poster, room panel, and footer are intentionally unchanged
+- Source image: 942 × 1668 px, portrait, approximately 9:16
+- Intended implementation viewport: 1080 × 1920 CSS px, device scale factor 1
+- Post-change implementation screenshot: unavailable because no Browser surface is connected
+- Density normalization: pending a rendered capture
+- State: header overlay enabled, live date/time
 
-## Full-view comparison evidence
+## Full-view and focused-region evidence
 
-The reference image was opened at original resolution. It establishes four major regions: a translucent red header, a full-bleed poster, a dark glass room panel in the lower fifth, and a translucent red footer. The implementation code now follows those proportions, but a post-change browser screenshot could not be captured, so visual comparison remains blocked.
+The source was opened at original resolution. Its header shows a CM logo floating over the full-bleed poster at upper left, and a separate dark translucent rounded date/time card at upper right. There is no full-width header band. The target logo occupies about 29% of frame width; the clock card occupies about 38%. The source clock has a prominent white `HH:mm` value with a smaller Thai date above it. A post-change implementation screenshot could not be captured, so no side-by-side visual comparison or focused implementation-region comparison is available.
 
-## Focused-region comparison evidence
+## Findings and implementation
 
-- Header target inspected: large CM logo at left, Thai date and `HH:mm` time at right, red ribbon visible through the translucent layer.
-- Room panel target inspected: two-column grid, four rooms, semantic green/red state, booking details only for a busy room.
-- Footer target inspected: one centered company-name line over a red ribbon treatment.
-- Implementation regions could not be captured after the latest changes.
-
-## Findings and fixes
-
-- [P1] Earlier implementation did not use the advertisement as a true full-screen base layer.
-  - Fix applied: slideshow media now fills the complete viewport with `object-fit: cover` and centered positioning.
-- [P2] Header and footer previously obscured too much of the poster.
-  - Fix applied: both use low-opacity branded overlays with light blur, allowing the poster and red ribbon asset to remain visible.
-- [P2] Footer previously repeated and scrolled the company name.
-  - Fix applied: footer now displays one centered, non-scrolling line with ellipsis protection.
-- [P2] Header and room-panel proportions differed from the target.
-  - Fix applied: logo/header scale and panel/footer placement were tuned against the 9:16 reference proportions.
+- [P1] Existing header was a full-width burgundy bar rather than separated floating elements. The bar background, border, blur, and ribbon pseudo-element were removed from `.display-header`.
+- [P2] Existing logo was too small for the selected reference. `.display-logo-img` was scaled to about 28.5% of portrait viewport width while retaining the actual CM logo asset.
+- [P2] Existing clock lacked the distinct dark glass card. `.display-clock` now has a translucent navy surface, rounded asymmetric corners, thin light border, restrained red glow, and stronger date/time hierarchy.
+- [P2] Portrait overrides previously forced the clock padding and type back to the old sizes. They were updated; an additional narrow-portrait rule keeps both elements side by side.
 
 ## Required fidelity surfaces
 
-- Fonts and typography: Thai hierarchy and tabular time are represented; exact rendered font matching needs a browser capture.
-- Spacing and layout rhythm: source ratios were measured and translated to responsive `clamp()` values; rendered confirmation is pending.
-- Colors and visual tokens: CM red, burgundy, translucent charcoal, semantic green, and semantic red are implemented.
-- Image quality and asset fidelity: the original CM logo, live poster images, and raster red-ribbon background asset are used. Poster media uses automatic full-bleed cover behavior.
-- Copy and content: the removed slogan remains absent; no person icon appears before room names; room state follows the room name; the footer uses the configured company text.
+- Fonts and typography: white Thai date and bold tabular clock are preserved as live text; visual font match and wrapping require a rendered capture.
+- Spacing and layout rhythm: logo and clock are separated with source-proportional widths and top/side spacing; rendered alignment remains unverified.
+- Colors and visual tokens: original CM red logo is used; clock uses deep navy transparency with white text and a subtle red edge.
+- Image quality and asset fidelity: no logo or poster was recreated. Existing CM logo image and dynamic full-bleed slideshow remain in use.
+- Copy and content: date and time are live, not hard-coded; no slogan was added.
 
-## Comparison history
+## Comparison history and checks
 
-1. User-provided earlier capture showed the initial portrait implementation.
-2. Poster sizing, header/footer transparency, name/status layout, clock formatting, and footer treatment were revised.
-3. Production build passed after the latest revision.
-4. Browser discovery returned no available browser, preventing the required post-fix capture and console inspection.
+1. Source image inspected; header geometry and appearance identified.
+2. CSS header rules changed without altering the poster, room panel, or footer.
+3. `npm.cmd run build` passed.
+4. Browser selection returned “No browser is available”; browser list was empty. Rendered screenshot, console check, and visual comparison remain outstanding.
 
 ## Implementation checklist
 
-1. Refresh `/display` at 1080 x 1920.
-2. Capture the full content viewport without browser chrome.
-3. Compare that capture with the reference and close any remaining P0/P1/P2 mismatch.
+1. Capture `/display` at 1080 × 1920 without browser chrome.
+2. Compare the top 220 px with the source, checking logo size, clock card bounds, contrast, and absence of a full-width bar.
+3. Check a narrow portrait viewport for overlap, then close any P1/P2 differences.
 
 final result: blocked
