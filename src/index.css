@@ -892,9 +892,14 @@ input[type="range"]::-webkit-slider-thumb {
   align-items: center;
   gap: clamp(5px, 0.7vw, 8px);
   flex-shrink: 0;
+  width: fit-content;
+  padding: clamp(4px, 0.55vw, 7px) clamp(7px, 0.9vw, 11px);
+  border: 1px solid currentColor;
+  border-radius: 999px;
   font-size: clamp(14px, 1.95vw, 22px);
   font-weight: 750;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .display-poster .display-room-dot {
@@ -905,8 +910,14 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: 0 0 14px currentColor;
 }
 
-.display-poster .display-room-status--free { color: #20e7a7; }
-.display-poster .display-room-status--busy { color: #ff4d58; }
+.display-poster .display-room-status--free {
+  color: #20e7a7;
+  background: rgba(32, 231, 167, 0.12);
+}
+.display-poster .display-room-status--busy {
+  color: #ff4d58;
+  background: rgba(255, 77, 88, 0.13);
+}
 
 .display-room-ready {
   margin: 0;
@@ -1132,7 +1143,15 @@ input[type="range"]::-webkit-slider-thumb {
 
 .settings-preview-rooms--ticker { bottom: 9%; }
 .settings-preview-rooms div { display: grid; gap: 2px; min-width: 0; font-size: 9px; }
-.settings-preview-rooms strong { color: #20e7a7; font-size: 11px; }
+.settings-preview-rooms strong {
+  width: fit-content;
+  padding: 2px 5px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: rgba(32, 231, 167, 0.12);
+  color: #20e7a7;
+  font-size: 11px;
+}
 
 .settings-preview-ticker {
   position: absolute;
