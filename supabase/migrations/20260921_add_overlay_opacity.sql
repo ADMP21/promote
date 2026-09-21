@@ -13,3 +13,5 @@ BEGIN
       CHECK (overlay_opacity IN (0.50, 0.70, 0.85));
   END IF;
 END $$;
+
+NOTIFY pgrst, 'reload schema';

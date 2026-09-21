@@ -37,6 +37,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
   const [previewImages, setPreviewImages] = useState([])
+  const [overlaySupported, setOverlaySupported] = useState(true)
 
   useEffect(() => {
     fetchSettings()
@@ -50,6 +51,7 @@ export default function Settings() {
       const { data, error } = await supabase.from('display_settings').select('*').single()
       if (error && error.code !== 'PGRST116') throw error
       if (data) {
+        setOverlaySupported(Object.hasOwn(data, 'overlay_opacity'))
         setSettings({
           slide_interval: data.slide_interval,
           transition_effect: data.transition_effect,
@@ -82,22 +84,32 @@ export default function Settings() {
         fullscreen_mode: settings.fullscreen_mode,
         show_header_overlay: settings.show_header_overlay,
         show_footer_ticker: settings.show_footer_ticker,
-        overlay_opacity: settings.overlay_opacity,
         ticker_text: settings.ticker_text,
+        ...(overlaySupported ? { overlay_opacity: settings.overlay_opacity } : {}),
       }
 
-      if (existing) {
-        const { error } = await supabase
-          .from('display_settings')
-          .update({ ...payload, updated_at: new Date().toISOString() })
+      const saveValues = (values) => existing
+        ? supabase.from('display_settings')
+          .update({ ...values, updated_at: new Date().toISOString() })
           .eq('id', existing.id)
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('display_settings').insert(payload)
-        if (error) throw error
-      }
+        : supabase.from('display_settings').insert(values)
 
-      setMessage({ type: 'success', text: th.settings.saved })
+      let { error } = await saveValues(payload)
+      let opacitySaved = overlaySupported
+
+      if (error && /overlay_opacity/.test(error.message) && /schema cache/i.test(error.message)) {
+        const fallback = { ...payload }
+        delete fallback.overlay_opacity
+        const fallbackResult = await saveValues(fallback)
+        error = fallbackResult.error
+        opacitySaved = false
+        setOverlaySupported(false)
+      }
+      if (error) throw error
+
+      setMessage(opacitySaved
+        ? { type: 'success', text: th.settings.saved }
+        : { type: 'warning', text: 'บันทึกค่าอื่นแล้ว แต่ยังบันทึกความทึบไม่ได้: กรุณารัน SQL migration บน Supabase' })
     } catch (err) {
       setMessage({ type: 'error', text: err.message })
     } finally {
@@ -125,7 +137,9 @@ export default function Settings() {
           className={`flex items-center gap-2 rounded-2xl px-4 py-3 text-sm ${
             message.type === 'success'
               ? 'bg-emerald-50 text-emerald-700'
-              : 'bg-red-50 text-red-600'
+              : message.type === 'warning'
+                ? 'bg-amber-50 text-amber-700'
+                : 'bg-red-50 text-red-600'
           }`}
         >
           {message.type === 'success' ? (
@@ -211,6 +225,11 @@ export default function Settings() {
         </GlassCard>
 
         <GlassCard title="ความทึบของแผงทับภาพ" subtitle="ปรับพื้นหลังเวลา สถานะห้อง และแถบข้อความให้เหมาะกับโปสเตอร์">
+          {!overlaySupported && (
+            <p className="mb-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              ทดลองดูในภาพตัวอย่างได้ แต่ต้องเพิ่มคอลัมน์ overlay_opacity ใน Supabase ก่อนจึงจะบันทึกค่านี้ได้
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-2" role="group" aria-label="ความทึบของแผงทับภาพ">
             {OVERLAY_LEVELS.map((level) => (
               <button
