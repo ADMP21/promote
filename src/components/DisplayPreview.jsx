@@ -1,16 +1,45 @@
 import { useEffect, useState } from 'react'
 import { format } from 'date-fns'
 import { th as thLocale } from 'date-fns/locale'
+import { preloadImage } from '../lib/preloadImage'
 
 export default function DisplayPreview({ settings, images }) {
   const [index, setIndex] = useState(0)
+  const [previousIndex, setPreviousIndex] = useState(null)
+  const [animating, setAnimating] = useState(false)
   const image = images[index % images.length]
+  const previousImage = previousIndex === null ? null : images[previousIndex % images.length]
 
   useEffect(() => {
     if (images.length < 2) return
-    const timer = setInterval(() => setIndex((current) => current + 1), settings.slide_interval * 1000)
-    return () => clearInterval(timer)
-  }, [images.length, settings.slide_interval])
+    let cancelled = false
+    let pending = false
+    const timer = setInterval(async () => {
+      if (pending) return
+      pending = true
+      const nextIndex = (index + 1) % images.length
+      const ready = await preloadImage(images[nextIndex].image_url)
+      if (!cancelled && ready) {
+        setPreviousIndex(index)
+        setIndex(nextIndex)
+        setAnimating(true)
+      }
+      pending = false
+    }, settings.slide_interval * 1000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [images, index, settings.slide_interval])
+
+  useEffect(() => {
+    if (!animating) return
+    const timer = setTimeout(() => {
+      setAnimating(false)
+      setPreviousIndex(null)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [animating, index])
 
   return (
     <aside className="glass-card rounded-3xl p-5 xl:sticky xl:top-32">
@@ -21,12 +50,23 @@ export default function DisplayPreview({ settings, images }) {
       <div className="settings-preview" style={{ '--display-overlay-opacity': settings.overlay_opacity }}>
         <img className="settings-preview-brand-background" src="/display-brand-bg.png" alt="" />
         {image ? (
-          <img
-            key={`${image.id}-${index}-${settings.transition_effect}`}
-            className={`settings-preview-image settings-preview-image--${settings.transition_effect}`}
-            src={image.image_url}
-            alt={image.title || 'ภาพโปสเตอร์ตัวอย่าง'}
-          />
+          <>
+            {animating && previousImage && (
+              <img
+                key={previousImage.id}
+                className="settings-preview-image"
+                src={previousImage.image_url}
+                alt=""
+                aria-hidden="true"
+              />
+            )}
+            <img
+              key={image.id}
+              className={`settings-preview-image ${animating ? `settings-preview-image--${settings.transition_effect}` : ''}`}
+              src={image.image_url}
+              alt={image.title || 'ภาพโปสเตอร์ตัวอย่าง'}
+            />
+          </>
         ) : (
           <div className="settings-preview-empty">ยังไม่มีโปสเตอร์ที่เปิดใช้งาน</div>
         )}

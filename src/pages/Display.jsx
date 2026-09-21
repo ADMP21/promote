@@ -4,7 +4,10 @@ import { th as thLocale } from 'date-fns/locale'
 import { Clock3, FileText, Maximize2, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { supabaseBooking } from '../lib/supabaseBooking'
+import { preloadImage } from '../lib/preloadImage'
 import { th } from '../i18n/th'
+
+const TRANSITION_MS = 1000
 
 const DEFAULT_SETTINGS = {
   slide_interval: 10,
@@ -31,6 +34,9 @@ export default function Display() {
   const [fullscreenError, setFullscreenError] = useState('')
   const intervalRef = useRef(null)
   const animationRef = useRef(null)
+  const transitionPendingRef = useRef(false)
+  const playlistVersionRef = useRef(0)
+  const imagesRef = useRef([])
 
   const fetchRoomsFromBookingSystem = useCallback(async () => {
     const { data } = await supabaseBooking
@@ -69,9 +75,20 @@ export default function Display() {
       .eq('active', true)
       .order('display_order', { ascending: true })
     if (imagesRes.data) {
+      const unchanged = imagesRef.current.length === imagesRes.data.length
+        && imagesRef.current.every((image, index) =>
+          image.id === imagesRes.data[index].id
+          && image.image_url === imagesRes.data[index].image_url)
+      if (unchanged) return
+
+      imagesRef.current = imagesRes.data
+      playlistVersionRef.current += 1
+      transitionPendingRef.current = false
+      clearTimeout(animationRef.current)
       setImages(imagesRes.data)
       setCurrentIndex(0)
       setPrevIndex(null)
+      setAnimating(false)
     }
   }, [])
 
@@ -220,17 +237,39 @@ export default function Display() {
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  const goToNext = useCallback(() => {
-    if (images.length <= 1 || animating) return
+  useEffect(() => {
+    if (images.length > 1) {
+      preloadImage(images[(currentIndex + 1) % images.length].image_url)
+    }
+  }, [images, currentIndex])
+
+  useEffect(() => () => {
+    playlistVersionRef.current += 1
+    clearTimeout(animationRef.current)
+  }, [])
+
+  const goToNext = useCallback(async () => {
+    if (images.length <= 1 || transitionPendingRef.current) return
+    transitionPendingRef.current = true
+    const nextIndex = (currentIndex + 1) % images.length
+    const playlistVersion = playlistVersionRef.current
+    const ready = await preloadImage(images[nextIndex].image_url)
+    if (playlistVersion !== playlistVersionRef.current) return
+    if (!ready) {
+      transitionPendingRef.current = false
+      return
+    }
+
     setAnimating(true)
     setPrevIndex(currentIndex)
-    setCurrentIndex((prev) => (prev + 1) % images.length)
+    setCurrentIndex(nextIndex)
     clearTimeout(animationRef.current)
     animationRef.current = setTimeout(() => {
       setAnimating(false)
       setPrevIndex(null)
-    }, 800)
-  }, [images.length, currentIndex, animating])
+      transitionPendingRef.current = false
+    }, TRANSITION_MS)
+  }, [images, currentIndex])
 
   useEffect(() => {
     if (images.length <= 1) return
@@ -246,7 +285,7 @@ export default function Display() {
 
     return (
       <div
-        key={`${image.id}-${type}`}
+        key={image.id}
         className={`display-slide display-slide--${transition} ${stateClass}`}
       >
         <img src={image.image_url} alt={image.title} className="display-slide-img" draggable={false} />
@@ -297,13 +336,8 @@ export default function Display() {
           </div>
         ) : (
           <div className="display-media-frame">
-            {!animating && renderSlide(currentImage, 'static')}
-            {animating && (
-              <>
-                {renderSlide(previousImage, 'exit')}
-                {renderSlide(currentImage, 'enter')}
-              </>
-            )}
+            {animating && renderSlide(previousImage, 'static')}
+            {renderSlide(currentImage, animating ? 'enter' : 'static')}
           </div>
         )}
       </main>
