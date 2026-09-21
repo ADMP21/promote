@@ -40,7 +40,10 @@
 | fullscreen_mode | BOOLEAN | Request fullscreen on TV |
 | show_header_overlay | BOOLEAN | Date/time overlay |
 | show_footer_ticker | BOOLEAN | Scrolling ticker |
+| overlay_opacity | NUMERIC | Overlay opacity: 0.50, 0.70, or 0.85 |
 | ticker_text | TEXT | Ticker message content |
+
+For an existing database, run `migrations/20260921_add_overlay_opacity.sql` in the Supabase SQL Editor before saving the new display settings.
 
 ## Storage Bucket
 

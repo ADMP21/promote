@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.display_settings (
   fullscreen_mode BOOLEAN NOT NULL DEFAULT true,
   show_header_overlay BOOLEAN NOT NULL DEFAULT true,
   show_footer_ticker BOOLEAN NOT NULL DEFAULT true,
+  overlay_opacity NUMERIC(3,2) NOT NULL DEFAULT 0.70 CHECK (overlay_opacity IN (0.50, 0.70, 0.85)),
   ticker_text TEXT NOT NULL DEFAULT 'Welcome to AOT Digital Signage System',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

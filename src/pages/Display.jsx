@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import { th as thLocale } from 'date-fns/locale'
-import { Clock3, FileText, UserRound } from 'lucide-react'
+import { Clock3, FileText, Maximize2, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { supabaseBooking } from '../lib/supabaseBooking'
 import { th } from '../i18n/th'
@@ -13,11 +13,9 @@ const DEFAULT_SETTINGS = {
   fullscreen_mode: true,
   show_header_overlay: true,
   show_footer_ticker: true,
+  overlay_opacity: 0.7,
   ticker_text: 'บริษัทเชียงใหม่โฟรเซ่นฟู้ดส์ จำกัด',
-  rooms: [],
 }
-
-const normalizeName = (s) => (s || '').trim().normalize('NFC').replace(/\s+/g, '')
 
 export default function Display() {
   const [images, setImages] = useState([])
@@ -29,6 +27,8 @@ export default function Display() {
   const [bookings, setBookings] = useState([])
   const [rooms, setRooms] = useState([])
   const [roomStatusMap, setRoomStatusMap] = useState({})
+  const [isFullscreen, setIsFullscreen] = useState(Boolean(document.fullscreenElement))
+  const [fullscreenError, setFullscreenError] = useState('')
   const intervalRef = useRef(null)
   const animationRef = useRef(null)
 
@@ -62,21 +62,21 @@ export default function Display() {
     if (data) setBookings(data)
   }, [])
 
-  const fetchData = useCallback(async () => {
-    const [imagesRes, settingsRes] = await Promise.all([
-      supabase
-        .from('images')
-        .select('*')
-        .eq('active', true)
-        .order('display_order', { ascending: true }),
-      supabase.from('display_settings').select('*').single(),
-    ])
-
+  const fetchImages = useCallback(async () => {
+    const imagesRes = await supabase
+      .from('images')
+      .select('*')
+      .eq('active', true)
+      .order('display_order', { ascending: true })
     if (imagesRes.data) {
       setImages(imagesRes.data)
       setCurrentIndex(0)
       setPrevIndex(null)
     }
+  }, [])
+
+  const fetchSettings = useCallback(async () => {
+    const settingsRes = await supabase.from('display_settings').select('*').single()
     if (settingsRes.data) {
       setSettings({
         slide_interval: settingsRes.data.slide_interval,
@@ -85,28 +85,23 @@ export default function Display() {
         fullscreen_mode: settingsRes.data.fullscreen_mode,
         show_header_overlay: settingsRes.data.show_header_overlay,
         show_footer_ticker: settingsRes.data.show_footer_ticker,
+        overlay_opacity: settingsRes.data.overlay_opacity ?? DEFAULT_SETTINGS.overlay_opacity,
         ticker_text: settingsRes.data.ticker_text,
-        rooms: settingsRes.data.rooms || [],
       })
     }
-
-    await Promise.all([
-      fetchBookingsFromBookingSystem(),
-      fetchRoomsFromBookingSystem(),
-    ])
-  }, [fetchBookingsFromBookingSystem, fetchRoomsFromBookingSystem])
-
-  useEffect(() => { fetchData() }, [fetchData])
+  }, [])
 
   useEffect(() => {
-    const imagesChannel = supabase
-      .channel('display-images')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, () => fetchData())
-      .subscribe()
+    fetchImages()
+    fetchSettings()
+    fetchBookingsFromBookingSystem()
+    fetchRoomsFromBookingSystem()
+  }, [fetchImages, fetchSettings, fetchBookingsFromBookingSystem, fetchRoomsFromBookingSystem])
 
+  useEffect(() => {
     const settingsChannel = supabase
       .channel('display-settings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'display_settings' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'display_settings' }, fetchSettings)
       .subscribe()
 
     const bookingsChannel = supabaseBooking
@@ -114,18 +109,40 @@ export default function Display() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => fetchBookingsFromBookingSystem())
       .subscribe()
 
+    const roomsChannel = supabaseBooking
+      .channel('booking-system-rooms')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, fetchRoomsFromBookingSystem)
+      .subscribe()
+
     const refreshInterval = setInterval(() => fetchBookingsFromBookingSystem(), 60_000)
+    const roomsRefreshInterval = setInterval(fetchRoomsFromBookingSystem, 5 * 60_000)
+
+    return () => {
+      supabase.removeChannel(settingsChannel)
+      supabaseBooking.removeChannel(bookingsChannel)
+      supabaseBooking.removeChannel(roomsChannel)
+      clearInterval(refreshInterval)
+      clearInterval(roomsRefreshInterval)
+    }
+  }, [fetchSettings, fetchBookingsFromBookingSystem, fetchRoomsFromBookingSystem])
+
+  useEffect(() => {
+    if (!settings.auto_refresh) return
+    fetchImages()
+    const imagesChannel = supabase
+      .channel('display-images')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'images' }, fetchImages)
+      .subscribe()
+    const refreshInterval = setInterval(fetchImages, 5 * 60_000)
 
     return () => {
       supabase.removeChannel(imagesChannel)
-      supabase.removeChannel(settingsChannel)
-      supabaseBooking.removeChannel(bookingsChannel)
       clearInterval(refreshInterval)
     }
-  }, [fetchData, fetchBookingsFromBookingSystem])
+  }, [settings.auto_refresh, fetchImages])
 
   useEffect(() => {
-    if (!settings.rooms?.length || !rooms.length) return
+    if (!rooms.length) return
 
     const computeStatus = () => {
       const nowBangkok = new Date(
@@ -133,15 +150,7 @@ export default function Display() {
       )
 
       const map = {}
-      settings.rooms.forEach((settingRoom) => {
-        const room = rooms.find(
-          (r) => normalizeName(r.name) === normalizeName(settingRoom.name)
-        )
-        if (!room) {
-          map[settingRoom.name] = { isBusy: false, booking: null }
-          return
-        }
-
+      rooms.forEach((room) => {
         const activeBooking = bookings.find((b) => {
           if (b.room_id !== room.id) return false
           const startBKK = new Date(new Date(b.start_time).toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }))
@@ -149,7 +158,7 @@ export default function Display() {
           return nowBangkok >= startBKK && nowBangkok <= endBKK
         })
 
-        map[settingRoom.name] = {
+        map[room.id] = {
           isBusy: !!activeBooking,
           booking: activeBooking
             ? {
@@ -178,7 +187,7 @@ export default function Display() {
     computeStatus()
     const interval = setInterval(computeStatus, 60_000)
     return () => clearInterval(interval)
-  }, [settings.rooms, rooms, bookings])
+  }, [rooms, bookings])
 
   useEffect(() => {
     const timer = setInterval(() => setClock(new Date()), 1000)
@@ -186,11 +195,25 @@ export default function Display() {
   }, [])
 
   useEffect(() => {
-    if (settings.fullscreen_mode) {
-      const el = document.documentElement
-      if (el.requestFullscreen) el.requestFullscreen().catch(() => {})
+    const syncFullscreen = () => setIsFullscreen(Boolean(document.fullscreenElement))
+    document.addEventListener('fullscreenchange', syncFullscreen)
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen)
+  }, [])
+
+  useEffect(() => {
+    if (!settings.fullscreen_mode && document.fullscreenElement === document.documentElement) {
+      document.exitFullscreen().catch(() => setFullscreenError('ไม่สามารถออกจากโหมดเต็มจอได้'))
     }
   }, [settings.fullscreen_mode])
+
+  const enterFullscreen = async () => {
+    setFullscreenError('')
+    try {
+      await document.documentElement.requestFullscreen()
+    } catch {
+      setFullscreenError('เปิดเต็มจอไม่สำเร็จ กรุณาอนุญาตโหมดเต็มจอในเบราว์เซอร์')
+    }
+  }
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -234,10 +257,13 @@ export default function Display() {
   const currentImage = images[currentIndex]
   const previousImage = prevIndex !== null ? images[prevIndex] : null
   const hasTicker = settings.show_footer_ticker && settings.ticker_text
-  const hasRooms = settings.rooms?.length > 0
+  const hasRooms = rooms.length > 0
 
   return (
-    <div className={`display-mode display-poster ${hasTicker ? 'display-has-ticker' : ''} ${hasRooms ? 'display-has-rooms' : ''}`}>
+    <div
+      className={`display-mode display-poster ${hasTicker ? 'display-has-ticker' : ''} ${hasRooms ? 'display-has-rooms' : ''}`}
+      style={{ '--display-overlay-opacity': settings.overlay_opacity }}
+    >
       <img className="display-brand-background" src="/display-brand-bg.png" alt="" aria-hidden="true" />
 
       <header className={`display-header ${settings.show_header_overlay ? '' : 'display-header--compact'}`}>
@@ -252,6 +278,17 @@ export default function Display() {
           </div>
         )}
       </header>
+
+      {((settings.fullscreen_mode && !isFullscreen) || fullscreenError) && (
+        <div className="display-fullscreen-control">
+          {settings.fullscreen_mode && !isFullscreen && (
+            <button type="button" onClick={enterFullscreen}>
+              <Maximize2 aria-hidden="true" /> เปิดเต็มจอ
+            </button>
+          )}
+          {fullscreenError && <p role="alert">{fullscreenError}</p>}
+        </div>
+      )}
 
       <main className="display-stage">
         {images.length === 0 ? (
@@ -273,8 +310,8 @@ export default function Display() {
 
       {hasRooms && (
         <section className="display-rooms" aria-label="สถานะห้องประชุม">
-          {settings.rooms.map((room) => {
-            const status = roomStatusMap[room.name] ?? { isBusy: false, booking: null }
+          {rooms.map((room) => {
+            const status = roomStatusMap[room.id] ?? { isBusy: false, booking: null }
             const { isBusy, booking } = status
 
             return (

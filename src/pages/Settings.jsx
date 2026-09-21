@@ -5,12 +5,19 @@ import GlassCard from '../components/GlassCard'
 import PageHeader from '../components/PageHeader'
 import Toggle from '../components/Toggle'
 import { th } from '../i18n/th'
+import DisplayPreview from '../components/DisplayPreview'
 
 const TRANSITIONS = [
   { value: 'fade', label: th.settings.transitions.fade },
   { value: 'slide-left', label: th.settings.transitions['slide-left'] },
   { value: 'slide-right', label: th.settings.transitions['slide-right'] },
   { value: 'zoom', label: th.settings.transitions.zoom },
+]
+
+const OVERLAY_LEVELS = [
+  { value: 0.5, label: 'โปร่งใส' },
+  { value: 0.7, label: 'สมดุล' },
+  { value: 0.85, label: 'อ่านชัด' },
 ]
 
 const DEFAULT_SETTINGS = {
@@ -20,13 +27,8 @@ const DEFAULT_SETTINGS = {
   fullscreen_mode: true,
   show_header_overlay: true,
   show_footer_ticker: true,
+  overlay_opacity: 0.7,
   ticker_text: th.settings.tickerPlaceholder,
-  rooms: [
-    { name: 'ห้องประชุมชั้นล่าง', status: 'free', topic: '', time: '' },
-    { name: 'ห้องประชุมใหญ่', status: 'free', topic: '', time: '' },
-    { name: 'ห้องประชุมเขียว', status: 'free', topic: '', time: '' },
-    { name: 'ห้องปฐมนิเทศ', status: 'free', topic: '', time: '' },
-  ],
 }
 
 export default function Settings() {
@@ -34,9 +36,13 @@ export default function Settings() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
+  const [previewImages, setPreviewImages] = useState([])
 
   useEffect(() => {
     fetchSettings()
+    supabase.from('images').select('id, image_url, title').eq('active', true)
+      .order('display_order', { ascending: true })
+      .then(({ data }) => setPreviewImages(data || []))
   }, [])
 
   async function fetchSettings() {
@@ -51,8 +57,8 @@ export default function Settings() {
           fullscreen_mode: data.fullscreen_mode,
           show_header_overlay: data.show_header_overlay,
           show_footer_ticker: data.show_footer_ticker,
+          overlay_opacity: data.overlay_opacity ?? DEFAULT_SETTINGS.overlay_opacity,
           ticker_text: data.ticker_text,
-          rooms: data.rooms || [],
         })
       }
     } catch (err) {
@@ -69,15 +75,25 @@ export default function Settings() {
 
     try {
       const { data: existing } = await supabase.from('display_settings').select('id').single()
+      const payload = {
+        slide_interval: settings.slide_interval,
+        transition_effect: settings.transition_effect,
+        auto_refresh: settings.auto_refresh,
+        fullscreen_mode: settings.fullscreen_mode,
+        show_header_overlay: settings.show_header_overlay,
+        show_footer_ticker: settings.show_footer_ticker,
+        overlay_opacity: settings.overlay_opacity,
+        ticker_text: settings.ticker_text,
+      }
 
       if (existing) {
         const { error } = await supabase
           .from('display_settings')
-          .update({ ...settings, updated_at: new Date().toISOString() })
+          .update({ ...payload, updated_at: new Date().toISOString() })
           .eq('id', existing.id)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('display_settings').insert(settings)
+        const { error } = await supabase.from('display_settings').insert(payload)
         if (error) throw error
       }
 
@@ -121,6 +137,7 @@ export default function Settings() {
         </div>
       )}
 
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,380px)]">
       <form onSubmit={handleSave} className="space-y-6">
         <GlassCard title={th.settings.slideshow} subtitle={th.settings.slideshowDesc}>
           <div className="grid gap-8 sm:grid-cols-2">
@@ -170,13 +187,13 @@ export default function Settings() {
               checked={settings.auto_refresh}
               onChange={(v) => update('auto_refresh', v)}
               label={th.settings.autoRefresh}
-              description={th.settings.autoRefreshDesc}
+              description="อัปเดตโปสเตอร์เมื่อมีการเปลี่ยนแปลง (สถานะห้องยังอัปเดตเสมอ)"
             />
             <Toggle
               checked={settings.fullscreen_mode}
               onChange={(v) => update('fullscreen_mode', v)}
               label={th.settings.fullscreen}
-              description={th.settings.fullscreenDesc}
+              description="แสดงปุ่มเปิดเต็มจอบนหน้าจอแสดงผล"
             />
             <Toggle
               checked={settings.show_header_overlay}
@@ -193,10 +210,31 @@ export default function Settings() {
           </div>
         </GlassCard>
 
+        <GlassCard title="ความทึบของแผงทับภาพ" subtitle="ปรับพื้นหลังเวลา สถานะห้อง และแถบข้อความให้เหมาะกับโปสเตอร์">
+          <div className="grid grid-cols-3 gap-2" role="group" aria-label="ความทึบของแผงทับภาพ">
+            {OVERLAY_LEVELS.map((level) => (
+              <button
+                key={level.value}
+                type="button"
+                onClick={() => update('overlay_opacity', level.value)}
+                aria-pressed={settings.overlay_opacity === level.value}
+                className={`rounded-xl border px-3 py-3 text-sm font-semibold transition-colors ${
+                  settings.overlay_opacity === level.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-slate-200 bg-white text-slate-600 hover:border-primary/40'
+                }`}
+              >
+                {level.label}
+              </button>
+            ))}
+          </div>
+        </GlassCard>
+
         <GlassCard title={th.settings.ticker} subtitle={th.settings.tickerDesc}>
           <textarea
             value={settings.ticker_text}
             onChange={(e) => update('ticker_text', e.target.value)}
+            disabled={!settings.show_footer_ticker}
             rows={3}
             className="input-field resize-none"
             placeholder={th.settings.tickerPlaceholder}
@@ -217,6 +255,8 @@ export default function Settings() {
           )}
         </button>
       </form>
+      <DisplayPreview settings={settings} images={previewImages} />
+      </div>
     </div>
   )
 }
