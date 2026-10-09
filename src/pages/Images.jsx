@@ -20,6 +20,7 @@ import UploadZone from '../components/UploadZone'
 import ImageCard from '../components/ImageCard'
 import PageHeader from '../components/PageHeader'
 import { th } from '../i18n/th'
+import { IMAGE_UPLOAD_LIMITS, optimizeImage } from '../lib/optimizeImage'
 
 export default function Images() {
   const [images, setImages] = useState([])
@@ -57,17 +58,25 @@ export default function Images() {
     setUploading(true)
     setError('')
     try {
+      const remainingSlots = IMAGE_UPLOAD_LIMITS.maxImages - images.length
+      if (remainingSlots <= 0) {
+        throw new Error(`อัปโหลดได้สูงสุด ${IMAGE_UPLOAD_LIMITS.maxImages} รูป กรุณาลบรูปเก่าก่อน`)
+      }
+      if (files.length > remainingSlots) {
+        throw new Error(`เหลือพื้นที่สำหรับอัปโหลดอีก ${remainingSlots} รูปเท่านั้น`)
+      }
+
       const maxOrder = images.reduce((max, img) => Math.max(max, img.display_order), 0)
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
-        const ext = file.name.split('.').pop()
-        const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const optimizedFile = await optimizeImage(file)
+        const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.webp`
         const title = file.name.replace(/\.[^/.]+$/, '')
 
         const { error: uploadError } = await supabase.storage
           .from(STORAGE_BUCKET)
-          .upload(filename, file, { cacheControl: '3600', upsert: false })
+          .upload(filename, optimizedFile, { cacheControl: '31536000', upsert: false })
 
         if (uploadError) throw uploadError
 
@@ -81,7 +90,10 @@ export default function Images() {
           display_order: maxOrder + i + 1,
         })
 
-        if (insertError) throw insertError
+        if (insertError) {
+          await supabase.storage.from(STORAGE_BUCKET).remove([filename])
+          throw insertError
+        }
       }
 
       await fetchImages()
@@ -111,7 +123,10 @@ export default function Images() {
     if (!confirm(th.images.deleteConfirm(image.title))) return
 
     try {
-      await supabase.storage.from(STORAGE_BUCKET).remove([image.filename])
+      const { error: removeError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .remove([image.filename])
+      if (removeError) throw removeError
       const { error: deleteError } = await supabase.from('images').delete().eq('id', image.id)
       if (deleteError) throw deleteError
       setImages((prev) => prev.filter((img) => img.id !== image.id))
@@ -158,7 +173,11 @@ export default function Images() {
       )}
 
       <GlassCard title={th.images.upload} subtitle={th.images.uploadDesc}>
-        <UploadZone onUpload={handleUpload} uploading={uploading} />
+        <UploadZone
+          onUpload={handleUpload}
+          uploading={uploading}
+          remainingSlots={Math.max(0, IMAGE_UPLOAD_LIMITS.maxImages - images.length)}
+        />
       </GlassCard>
 
       <GlassCard
