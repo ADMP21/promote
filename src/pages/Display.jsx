@@ -9,6 +9,15 @@ import { th } from '../i18n/th'
 
 const TRANSITION_MS = 1000
 
+const ROOM_NAME_MAP = {
+  'ห้องประชุมชั้นล่าง': 'ห้อง CONFERENCE',
+}
+
+const getRoomDisplayName = (name) => {
+  const trimmed = (name || '').trim()
+  return ROOM_NAME_MAP[trimmed] || name
+}
+
 const DEFAULT_SETTINGS = {
   slide_interval: 10,
   transition_effect: 'fade',
@@ -355,7 +364,7 @@ export default function Display() {
               >
                 <div className="display-room-heading">
                   <div className="display-room-title-wrap">
-                    <h2 className="display-room-name">{room.name}</h2>
+                    <h2 className="display-room-name">{getRoomDisplayName(room.name)}</h2>
                     <div className={`display-room-status ${isBusy ? 'display-room-status--busy' : 'display-room-status--free'}`}>
                       <span className="display-room-dot" aria-hidden="true" />
                       <span>{isBusy ? 'ไม่ว่าง' : 'ว่าง'}</span>
